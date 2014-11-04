@@ -1,28 +1,28 @@
-src/luaapi/luast.d: ../src/luaapi/luast.c \
- /home/blc/c/corelib/include/exception.h \
- /home/blc/c/corelib/include/logger.h /home/blc/c/corelib/include/utils.h \
- /home/blc/c/corelib/src/st/public.h \
- /home/blc/c/corelib/include/luaapi/luast.h \
- /home/blc/c/corelib/libs/lua.h /home/blc/c/corelib/libs/luaconf.h \
- /home/blc/c/corelib/libs/lauxlib.h /home/blc/c/corelib/libs/lua.h \
- /home/blc/c/corelib/libs/lualib.h
+src/luaapi/luast.d: ../src/luaapi/luast.c /home/blc/c/score/include/mem.h \
+ /home/blc/c/score/include/exception.h /home/blc/c/score/include/logger.h \
+ /home/blc/c/score/include/utils.h /home/blc/c/score/src/st/public.h \
+ /home/blc/c/score/include/luaapi/luast.h /home/blc/c/score/libs/lua.h \
+ /home/blc/c/score/libs/luaconf.h /home/blc/c/score/libs/lauxlib.h \
+ /home/blc/c/score/libs/lua.h /home/blc/c/score/libs/lualib.h
 
-/home/blc/c/corelib/include/exception.h:
+/home/blc/c/score/include/mem.h:
 
-/home/blc/c/corelib/include/logger.h:
+/home/blc/c/score/include/exception.h:
 
-/home/blc/c/corelib/include/utils.h:
+/home/blc/c/score/include/logger.h:
 
-/home/blc/c/corelib/src/st/public.h:
+/home/blc/c/score/include/utils.h:
 
-/home/blc/c/corelib/include/luaapi/luast.h:
+/home/blc/c/score/src/st/public.h:
 
-/home/blc/c/corelib/libs/lua.h:
+/home/blc/c/score/include/luaapi/luast.h:
 
-/home/blc/c/corelib/libs/luaconf.h:
+/home/blc/c/score/libs/lua.h:
 
-/home/blc/c/corelib/libs/lauxlib.h:
+/home/blc/c/score/libs/luaconf.h:
 
-/home/blc/c/corelib/libs/lua.h:
+/home/blc/c/score/libs/lauxlib.h:
 
-/home/blc/c/corelib/libs/lualib.h:
+/home/blc/c/score/libs/lua.h:
+
+/home/blc/c/score/libs/lualib.h:

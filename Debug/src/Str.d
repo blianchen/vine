@@ -1,17 +1,16 @@
-src/Str.d: ../src/Str.c /home/blc/c/corelib/include/Str.h \
- /home/blc/c/corelib/include/mem.h /home/blc/c/corelib/include/utils.h \
- /home/blc/c/corelib/include/SQLException.h \
- /home/blc/c/corelib/include/exception.h \
- /home/blc/c/corelib/include/logger.h
+src/Str.d: ../src/Str.c /home/blc/c/score/include/Str.h \
+ /home/blc/c/score/include/mem.h /home/blc/c/score/include/utils.h \
+ /home/blc/c/score/include/SQLException.h \
+ /home/blc/c/score/include/exception.h /home/blc/c/score/include/logger.h
 
-/home/blc/c/corelib/include/Str.h:
+/home/blc/c/score/include/Str.h:
 
-/home/blc/c/corelib/include/mem.h:
+/home/blc/c/score/include/mem.h:
 
-/home/blc/c/corelib/include/utils.h:
+/home/blc/c/score/include/utils.h:
 
-/home/blc/c/corelib/include/SQLException.h:
+/home/blc/c/score/include/SQLException.h:
 
-/home/blc/c/corelib/include/exception.h:
+/home/blc/c/score/include/exception.h:
 
-/home/blc/c/corelib/include/logger.h:
+/home/blc/c/score/include/logger.h:

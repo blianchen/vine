@@ -32,7 +32,7 @@ all: corelib
 corelib: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/blc/c/corelib/libs" -lpthread -lm -ldl -o "corelib" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/blc/c/score/libs" -lpthread -lm -ldl -o "corelib" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
