@@ -31,7 +31,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include <exception.h>
+#include <exception/exception.h>
 
 /**
  * Implementation of the Exception interface. Defines the Thread local 
@@ -54,6 +54,7 @@ Exception_T SQLException = {"SQLException"};
 #endif
 //Exception_T AssertException = {"AssertException"};
 Exception_T MemoryException = {"MemoryException"};
+Exception_T STException = {"STException"};
 
 /* Thread specific Exception stack */
 ThreadData_T Exception_stack;

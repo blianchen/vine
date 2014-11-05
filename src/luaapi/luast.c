@@ -9,12 +9,10 @@
 #include <string.h>
 
 #include <mem.h>
-#include <exception.h>
+#include <exception/STException.h>
 #include <st/public.h>
 
 #include <luaapi/luast.h>
-
-#define LUA_ST_LIB_NAME "st"
 
 
 //void st_context_init() {
@@ -46,6 +44,7 @@ void* st_main_call_p(void* args) {
 	FREE(cls);
 	return NULL;
 }
+
 
 #define INIT_ALLOC_SIZE 1024
 #define MAX_DOUBLE_DIGIT_NUM 24
@@ -116,7 +115,7 @@ int create_thread(lua_State* l) {
 
 			break;
 		default:
-//			THROW(STException, "throw exception!!!!!!!!!!!!");
+			THROW(STException, "throw exception!!!!!!!!!!!!");
 			break;
 		}
 	}
@@ -131,6 +130,9 @@ int create_thread(lua_State* l) {
 }
 
 
+////////////////////////////////////////////////////////////
+////  private  function
+////////////////////////////////////////////////////////////
 void dump_cstack(lua_State* l) {
 	int n = lua_gettop(l);
 	int i;

@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <utils.h>
 
-#include <SQLException.h>
+#include <exception/SQLException.h>
 
 /**
  * Implementation of the Str interface

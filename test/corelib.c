@@ -11,13 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #include "crypto_test.h"
 #include "core_test.h"
 
-#include <exception.h>
-#include <MemoryException.h>
-#include <setjmp.h>
+#include <exception/exception.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -28,28 +25,9 @@
 #include <st/public.h>
 #include <stdint.h>
 
-int addc(lua_State* l) {
-	lua_pushnumber(l, 210);
-	return 1;
-}
-
-
-int calllua(lua_State* l) {
-	printf("in calllua!!!!\n");
-//	printstk(l);
-	char* funname = luaL_checkstring(l, 1);
-//	printf("-----------------------\n");
-//	int paramNum = luaL_checkinteger(l, 2);
-	lua_getglobal(l, funname);
-	lua_replace(l, 1);
-//	printstk(l);
-	lua_pcall(l, lua_gettop(l)-1, 0, 0);
-	return 0;
-}
 
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
-
 
 	exception_init();
 

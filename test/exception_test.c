@@ -7,8 +7,7 @@
 
 #include "core_test.h"
 
-#include <exception.h>
-#include <MemoryException.h>
+#include <exception/MemoryException.h>
 
 ////// 移植的，原来有完整的测试
 

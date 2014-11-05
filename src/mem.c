@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <MemoryException.h>
+#include <exception/MemoryException.h>
 #include <utils.h>
 
 /**

@@ -5,10 +5,12 @@
  *      Author: blc
  */
 
+#include <stdlib.h>
+
 #include <base64.h>
 #include "crypto_test.h"
 
-#include <stdlib.h>
+
 
 START_TEST(test_base64_encode) {
 	const char s1[] = "http://www.google.com:8080/index.jsp";

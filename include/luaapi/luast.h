@@ -17,12 +17,16 @@
 #define offsetof(type, identifier) ((size_t)&(((type *)0)->identifier))
 #endif
 
+#define LUA_ST_LIB_NAME "st"
 
 //void st_context_init();
 
 LUA_API int lua_open_stlib(lua_State* l);
 
 
+////////////////////////////////////////////////////////////
+////  private  function
+////////////////////////////////////////////////////////////
 void dump_cstack(lua_State* l);
 
 #endif /* LUAAPI_LUAST_H_ */
