@@ -104,9 +104,6 @@ int main(void) {
 
 	exception_init();
 
-//	dost();
-//	return 0;
-
 	if (st_init() < 0) {
 //		THROW(st_exception, "st init error.");
 	}
@@ -121,7 +118,6 @@ int main(void) {
 	lua_getglobal(ls, "luafun");
 	lua_pcall(ls, 0, 0, 0);
 
-//	sleep(5);
 	st_thread_exit(NULL);
 
 	lua_close(ls);

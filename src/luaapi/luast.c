@@ -5,11 +5,14 @@
  *      Author: blc
  */
 
+
 #include <mem.h>
 #include <exception.h>
 #include <st/public.h>
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <luaapi/luast.h>
 
@@ -44,10 +47,10 @@ void dumpstk(lua_State* l) {
 //	}
 //}
 
-int stop_thread(lua_State* l) {
-	st_thread_exit(NULL);
-	return 0;
-}
+//int stop_thread(lua_State* l) {
+//	st_thread_exit(NULL);
+//	return 0;
+//}
 
 int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
@@ -60,7 +63,6 @@ int msleep(lua_State* l) {
 typedef struct {
 	int type;
 	int size;
-//	char* value;
 } CallArg;
 typedef struct {
 	lua_State* l;
@@ -68,13 +70,24 @@ typedef struct {
 	CallArg* args;
 } CallStackArgs;
 
+
+typedef struct {
+	lua_State* l;
+	char* luaStr;
+} CallLuaStr;
+
 //static char* cstStr = "st.call_lua_start_fun(";
 void* st_main_call_p(void* args) {
-	CallStackArgs* ca = (CallStackArgs*)args;
-//	st_thread_setspecific(0, ca);
-	char cs[64];
-	sprintf(cs, "st.call_lua_start_fun(%llu)", (uint64_t)ca);
-	luaL_dostring(ca->l, cs);
+//	CallStackArgs* ca = (CallStackArgs*)args;
+//	char cs[64];
+//	sprintf(cs, "st.call_lua_start_fun(%llu)", (uint64_t)ca);
+//	printf("lua str == %s\n", cs);
+//	luaL_dostring(ca->l, cs);
+
+	CallLuaStr* cls = (CallLuaStr*) args;
+	printf("lua str == %s\n", cls->luaStr);
+	luaL_dostring(cls->l, cls->luaStr);
+
 	return NULL;
 }
 
@@ -116,14 +129,25 @@ int call_lua_start_fun(lua_State* l) {
 		}
 	}
 //	dumpstk(l);
-	lua_pcall(l, lua_gettop(l)-1, 0, 0);
+	lua_pcall(l, stkn-1, 0, 0);
+
+	free(ca);
 	return 0;
 }
 
 #define INIT_ALLOC_SIZE 1024
 
 int create_thread(lua_State* l) {
-//	dumpstk(l);
+	CallLuaStr* cls = MALLOC(2048);
+
+//	cls->l = l;
+	cls->l = lua_newthread(l);
+//	cls->l = luaL_newstate();
+//	luaL_openlibs(cls->l);
+//	lua_open_stlib(cls->l);
+//	luaL_loadfile(cls->l, "t.lua");
+//	lua_pcall(cls->l, 0, 0, 0);
+	cls->luaStr = (char*)cls + sizeof(CallLuaStr);
 
 	int stkn = lua_gettop(l);
 
@@ -131,7 +155,7 @@ int create_thread(lua_State* l) {
 	CallStackArgs* callArgs = MALLOC(INIT_ALLOC_SIZE);	// init 2k
 	callArgs->l = l;
 	callArgs->argsNum = stkn;
-	callArgs->args = ((char*)callArgs) + sizeof(CallStackArgs);
+	callArgs->args = (CallArg*) (((char*)callArgs) + sizeof(CallStackArgs));
 	char* sp = (char*)callArgs->args;
 
 	CallArg* p = callArgs->args;
@@ -148,7 +172,7 @@ int create_thread(lua_State* l) {
 			p->type = LUA_TBOOLEAN;
 			p->size = lua_toboolean(l, i);
 			p++;
-			sp = p;
+			sp = (char*)p;
 			break;
 		case LUA_TNUMBER:
 			p->type = LUA_TNUMBER;
@@ -157,6 +181,11 @@ int create_thread(lua_State* l) {
 			*((lua_Number*)sp) = luaL_checknumber(l, i);
 			sp += p->size;
 			p = (CallArg*)sp;
+
+			char lll[20];
+			sprintf(lll, "%d", (int)luaL_checknumber(l, i));
+			strcat(cls->luaStr, lll);
+
 			break;
 		case LUA_TSTRING:
 			p->type = LUA_TSTRING;
@@ -167,6 +196,12 @@ int create_thread(lua_State* l) {
 			memcpy(sp, s, p->size);
 			sp += p->size;
 			p = (CallArg*)sp;
+
+			if (i == 1) {
+				strcpy(cls->luaStr, s);
+				strcat(cls->luaStr, "(");
+			}
+
 			break;
 		default:
 //			THROW(MemoryException, "throw exception!!!!!!!!!!!!");
@@ -174,7 +209,10 @@ int create_thread(lua_State* l) {
 		}
 	}
 
-	if (st_thread_create(st_main_call_p, (void*) callArgs, 0, 0) == NULL) {
+	strcat(cls->luaStr, ")");
+
+//	if (st_thread_create(st_main_call_p, (void*) callArgs, 0, 0) == NULL) {
+	if (st_thread_create(st_main_call_p, (void*) cls, 0, 0) == NULL) {
 		return -1;
 	}
 	return 1;
@@ -182,7 +220,7 @@ int create_thread(lua_State* l) {
 
 static const luaL_Reg funs[] = {
 		{"create_thread", create_thread},
-		{"stop_thread", stop_thread},
+//		{"stop_thread", stop_thread},
 		{"msleep", msleep},
 		{"call_lua_start_fun", call_lua_start_fun},
 		{NULL, NULL}
