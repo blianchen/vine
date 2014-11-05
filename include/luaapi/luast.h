@@ -22,4 +22,7 @@
 
 LUA_API int lua_open_stlib(lua_State* l);
 
+
+void dump_cstack(lua_State* l);
+
 #endif /* LUAAPI_LUAST_H_ */

@@ -33,28 +33,6 @@ int addc(lua_State* l) {
 	return 1;
 }
 
-void printstk(lua_State* l) {
-	int n = lua_gettop(l);
-	int i;
-	for (i=1; i<=n; i++) {
-		int t = lua_type(l, i);
-		switch (t) {
-		case LUA_TNUMBER:
-			printf("stack index %i is number %g", i, lua_tonumber(l, i));
-			break;
-		case LUA_TSTRING:
-			printf("stack index %i is string %s", i, lua_tostring(l, i));
-			break;
-		case LUA_TBOOLEAN:
-			printf("stack index %i is boolean %s", i, lua_toboolean(l, i)?"true":"false");
-			break;
-		default:
-			printf("stack index %i type is %s", i, lua_typename(l, t));
-			break;
-		}
-		printf("\n");
-	}
-}
 
 int calllua(lua_State* l) {
 	printf("in calllua!!!!\n");
@@ -69,38 +47,9 @@ int calllua(lua_State* l) {
 	return 0;
 }
 
-
-
-//void* do_calc(void* arg){
-//	uint64_t sleep_ms = (uint64_t)(char*)arg * 1;
-//    for(;;){
-//        printf("in sthread #%lums\n", sleep_ms);
-//        st_usleep(sleep_ms * 1000 * 1000);
-//    }
-//    return NULL;
-//}
-
-void dost(void) {
-	if (st_init() < 0) {
-		printf("error!");
-		return;
-	}
-
-	uint64_t i;
-	int count = 3;
-	for (i = 1; i <= count; i++) {
-//		if (st_thread_create(do_calc, (void*) i, 0, 0) == NULL) {
-//			printf("error!");
-//			return;
-//		}
-	}
-
-	st_thread_exit(NULL);
-}
-
-
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
+
 
 	exception_init();
 

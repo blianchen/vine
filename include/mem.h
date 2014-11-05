@@ -66,7 +66,7 @@
  * @exception MemoryException if allocation failed
  * @hideinitializer
  */
-#define NEW(p) ((p) = CALLOC(1, (long)sizeof *(p)))
+#define NEW(p) CALLOC(1, (long)sizeof *(p))
 
 
 /**
@@ -85,7 +85,7 @@
  * @exception AssertException if <code>n <= 0</code> 
  * @hideinitializer
  */
-#define REALLOC(p, n) ((p) = mem_realloc((p), (n), __func__, __FILE__, __LINE__))
+#define REALLOC(p, n) mem_realloc((p), (n), __func__, __FILE__, __LINE__)
 
 
 /**
