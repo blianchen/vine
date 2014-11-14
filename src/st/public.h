@@ -50,7 +50,7 @@
 #define ST_VERSION_MINOR    9
 
 /* Undefine this to remove the context switch callback feature. */
-#define ST_SWITCH_CB
+//#define ST_SWITCH_CB
 
 #ifndef ETIME
 #define ETIME ETIMEDOUT
@@ -75,8 +75,6 @@ extern "C" {
 
 typedef unsigned long long  st_utime_t;
 typedef struct _st_thread * st_thread_t;
-typedef struct _st_cond *   st_cond_t;
-typedef struct _st_mutex *  st_mutex_t;
 typedef struct _st_netfd *  st_netfd_t;
 #ifdef ST_SWITCH_CB
 typedef void (*st_switch_cb_t)(void);
@@ -96,7 +94,6 @@ extern st_switch_cb_t st_set_switch_out_cb(st_switch_cb_t cb);
 
 extern st_thread_t st_thread_self(void);
 extern void st_thread_exit(void *retval);
-extern int st_thread_join(st_thread_t thread, void **retvalp);
 extern void st_thread_interrupt(st_thread_t thread);
 extern st_thread_t st_thread_create(void *(*start)(void *arg), void *arg, int stack_size);
 extern int st_randomize_stacks(int on);
@@ -108,17 +105,6 @@ extern int st_timecache_set(int on);
 extern time_t st_time(void);
 extern int st_usleep(st_utime_t usecs);
 extern int st_sleep(int secs);
-extern st_cond_t st_cond_new(void);
-extern int st_cond_destroy(st_cond_t cvar);
-extern int st_cond_timedwait(st_cond_t cvar, st_utime_t timeout);
-extern int st_cond_wait(st_cond_t cvar);
-extern int st_cond_signal(st_cond_t cvar);
-extern int st_cond_broadcast(st_cond_t cvar);
-extern st_mutex_t st_mutex_new(void);
-extern int st_mutex_destroy(st_mutex_t lock);
-extern int st_mutex_lock(st_mutex_t lock);
-extern int st_mutex_unlock(st_mutex_t lock);
-extern int st_mutex_trylock(st_mutex_t lock);
 
 extern int st_key_create(int *keyp, void (*destructor)(void *));
 extern int st_key_getlimit(void);

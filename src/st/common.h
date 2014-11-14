@@ -152,10 +152,6 @@ typedef struct _st_stack {
 } _st_stack_t;
 
 
-typedef struct _st_cond {
-  _st_clist_t wait_q;	      /* Condition variable wait queue */
-} _st_cond_t;
-
 
 typedef struct _st_thread _st_thread_t;
 
@@ -170,7 +166,6 @@ struct _st_thread {
   _st_stack_t *stack;	      /* Info about thread's stack */
 
   _st_clist_t links;          /* For putting on run/sleep/zombie queue */
-  _st_clist_t wait_links;     /* For putting on mutex/condvar wait queue */
 #ifdef DEBUG
   _st_clist_t tlink;          /* For putting on thread queue */
 #endif
@@ -182,16 +177,8 @@ struct _st_thread {
 
   void **private_data;        /* Per thread private data */
 
-  _st_cond_t *term;           /* Termination condition variable for join */
-
   jmp_buf context;            /* Thread's context */
 };
-
-
-typedef struct _st_mutex {
-  _st_thread_t *owner;        /* Current mutex owner */
-  _st_clist_t  wait_q;        /* Mutex wait queue */
-} _st_mutex_t;
 
 
 typedef struct _st_pollq {
@@ -305,8 +292,8 @@ extern _st_eventsys_t *_st_eventsys;
 #define _ST_ST_RUNNING      0 
 #define _ST_ST_RUNNABLE     1
 #define _ST_ST_IO_WAIT      2
-#define _ST_ST_LOCK_WAIT    3
-#define _ST_ST_COND_WAIT    4
+//#define _ST_ST_LOCK_WAIT    3
+//#define _ST_ST_COND_WAIT    4
 #define _ST_ST_SLEEPING     5
 #define _ST_ST_ZOMBIE       6
 #define _ST_ST_SUSPENDED    7
@@ -328,9 +315,6 @@ extern _st_eventsys_t *_st_eventsys;
 
 #define _ST_THREAD_PTR(_qp)         \
     ((_st_thread_t *)((char *)(_qp) - offsetof(_st_thread_t, links)))
-
-#define _ST_THREAD_WAITQ_PTR(_qp)   \
-    ((_st_thread_t *)((char *)(_qp) - offsetof(_st_thread_t, wait_links)))
 
 #define _ST_THREAD_STACK_PTR(_qp)   \
     ((_st_stack_t *)((char*)(_qp) - offsetof(_st_stack_t, links)))
@@ -451,10 +435,6 @@ void _st_stack_free(_st_stack_t *ts);
 int _st_io_init(void);
 
 st_utime_t st_utime(void);
-_st_cond_t *st_cond_new(void);
-int st_cond_destroy(_st_cond_t *cvar);
-int st_cond_timedwait(_st_cond_t *cvar, st_utime_t timeout);
-int st_cond_signal(_st_cond_t *cvar);
 ssize_t st_read(_st_netfd_t *fd, void *buf, size_t nbyte, st_utime_t timeout);
 ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte,
 		 st_utime_t timeout);

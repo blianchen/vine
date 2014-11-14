@@ -242,21 +242,6 @@ void st_thread_exit(void *retval)
   thread->retval = retval;
   _st_thread_cleanup(thread);
   _st_active_count--;
-  if (thread->term) {
-    /* Put thread on the zombie queue */
-    thread->state = _ST_ST_ZOMBIE;
-    _ST_ADD_ZOMBIEQ(thread);
-
-    /* Notify on our termination condition variable */
-    st_cond_signal(thread->term);
-
-    /* Switch context and come back later */
-    _ST_SWITCH_CONTEXT(thread);
-
-    /* Continue the cleanup */
-    st_cond_destroy(thread->term);
-    thread->term = NULL;
-  }
 
 #ifdef DEBUG
   _ST_DEL_THREADQ(thread);
@@ -427,10 +412,9 @@ void _st_del_sleep_q(_st_thread_t *thread)
 void _st_vp_check_clock(void)
 {
   _st_thread_t *thread;
-  st_utime_t elapsed, now;
+  st_utime_t now;
  
   now = st_utime();
-  elapsed = now - _ST_LAST_CLOCK;
   _ST_LAST_CLOCK = now;
 
   if (_st_curr_time && now - _st_last_tset > 999000) {
@@ -444,10 +428,6 @@ void _st_vp_check_clock(void)
     if (thread->due > now)
       break;
     _ST_DEL_SLEEPQ(thread);
-
-    /* If thread is waiting on condition variable, set the time out flag */
-    if (thread->state == _ST_ST_COND_WAIT)
-      thread->flags |= _ST_FL_TIMEDOUT;
 
     /* Make thread runnable */
     ST_ASSERT(!(thread->flags & _ST_FL_IDLE_THREAD));

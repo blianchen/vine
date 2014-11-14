@@ -27,7 +27,8 @@ static void* st_thread_callback_fun(void* arg) {
 	lua_State* tl = (lua_State*) arg;
 	int nargs = lua_tointeger(tl, -1);
 	lua_pop(tl, 1);
-	int r = lua_pcall(tl, nargs, 0, 0);
+//	int r = lua_pcall(tl, nargs, 0, 0);
+	lua_pcall(tl, nargs, 0, 0);
 	return NULL;
 }
 

@@ -30,14 +30,14 @@ function luafun()
 
 --	st.create_thread(threadStart, 400, 500, "ertyu");
 print("time11111===" .. string.format("%d", st.mstime()))
-	for i=1,4 do
+	for i=1,40 do
 		--print("---------create_thread " .. i);
 
 		cos[i] = st.create_thread(function (cn) 	
 										local j = 3;
 										while j>0 do
 											print("---------in do_calc start ==== llcc " .. (cn));
-											st.msleep(cn*1000);
+											st.msleep(cn*10);
 										--	print("---------in do_calc end " .. (cn));
 											j = j - 1;
 										end
@@ -46,7 +46,7 @@ print("time11111===" .. string.format("%d", st.mstime()))
 print("time22222===" .. string.format("%d", st.mstime()))
 
 print("time33333===" .. string.format("%d", st.mstime()))
-	for i=1,4 do
+	for i=1,40 do
 		st.run_thread(cos[i], i);
 	end
 print("time44444===" .. string.format("%d", st.mstime()))
