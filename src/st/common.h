@@ -146,6 +146,9 @@ typedef struct _st_stack {
   char *stk_bottom;           /* Lowest address of stack's usable portion */
   char *stk_top;              /* Highest address of stack's usable portion */
   void *sp;                   /* Stack pointer from C's point of view */
+#ifdef __ia64__
+  void *bsp;                  /* Register stack backing store pointer */
+#endif
 } _st_stack_t;
 
 
@@ -453,9 +456,11 @@ int st_cond_destroy(_st_cond_t *cvar);
 int st_cond_timedwait(_st_cond_t *cvar, st_utime_t timeout);
 int st_cond_signal(_st_cond_t *cvar);
 ssize_t st_read(_st_netfd_t *fd, void *buf, size_t nbyte, st_utime_t timeout);
-ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte, st_utime_t timeout);
+ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte,
+		 st_utime_t timeout);
 int st_poll(struct pollfd *pds, int npds, st_utime_t timeout);
-_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinable, int stk_size);
+_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
+			      int joinable, int stk_size);
 
 #endif /* !__ST_COMMON_H__ */
 

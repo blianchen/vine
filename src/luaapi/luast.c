@@ -15,117 +15,58 @@
 #include <luaapi/luast.h>
 
 
-//void st_context_init() {
-//	if (st_init() < 0) {
-////		THROW(st_exception, "st init error.");
-//	}
-//}
+static int thread_create(lua_State* L) {
+	lua_State *NL = lua_newthread(L);
+	luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1, "Lua function expected");
+	lua_pushvalue(L, 1); /* move function to top */
+	lua_xmove(L, NL, 1); /* move function from L to NL */
+	return 1;
+}
 
-//int stop_thread(lua_State* l) {
-//	st_thread_exit(NULL);
-//	return 0;
-//}
+static void* st_thread_callback_fun(void* arg) {
+	lua_State* tl = (lua_State*) arg;
+	int nargs = lua_tointeger(tl, -1);
+	lua_pop(tl, 1);
+	int r = lua_pcall(tl, nargs, 0, 0);
+	return NULL;
+}
 
-int msleep(lua_State* l) {
+static int thread_run(lua_State* L) {
+	lua_State* tl = lua_tothread(L, 1);
+	luaL_argcheck(L, tl, 1, "thread expected");
+	int nargs = lua_gettop(L) - 1;
+	lua_xmove(L, tl, nargs);
+	lua_pushinteger(tl, nargs);
+
+	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0, 0) == NULL) {
+		lua_pushinteger(L, -1);
+	} else {
+		lua_pushinteger(L, 0);
+	}
+	return 1;
+}
+
+static int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
 	st_usleep(ms * 1000);
 	return 0;
 }
 
-typedef struct {
-	lua_State* l;
-	char* luaStr;
-} CallLuaStr;
-
-void* st_main_call_p(void* args) {
-	CallLuaStr* cls = (CallLuaStr*) args;
-	printf("lua str == %s\n", cls->luaStr);
-	luaL_dostring(cls->l, cls->luaStr);
-	FREE(cls);
-	return NULL;
+static int mstime(lua_State* l) {
+	lua_pushnumber(l, st_utime());
+	return 1;
 }
 
+static const luaL_Reg funs[] = {
+		{"create_thread", thread_create},
+		{"run_thread", thread_run},
+		{"msleep", msleep},
+		{"mstime", mstime},
+		{NULL, NULL}
+};
 
-#define INIT_ALLOC_SIZE 1024
-#define MAX_DOUBLE_DIGIT_NUM 24
-
-int create_thread(lua_State* l) {
-	CallLuaStr* cls = MALLOC(INIT_ALLOC_SIZE);
-
-	cls->l = lua_newthread(l);
-//	cls->l = luaL_newstate();
-//	luaL_openlibs(cls->l);
-//	lua_open_stlib(cls->l);
-//	luaL_loadfile(cls->l, "t.lua");
-//	lua_pcall(cls->l, 0, 0, 0);
-	cls->luaStr = (char*)cls + sizeof(CallLuaStr);
-
-	int stkn = lua_gettop(l);
-
-	int alloc_size = INIT_ALLOC_SIZE - sizeof(cls) - 1;
-	int sp = 0;
-	char df[MAX_DOUBLE_DIGIT_NUM];
-	int tmpStrLen;
-	const char* s; size_t sl;
-	int i;
-	int type;
-	for (i = 1; i <= stkn; i++) {
-		type = lua_type(l, i);
-		switch (type) {
-		case LUA_TBOOLEAN:
-			if (sp + 6 >= alloc_size) {
-				alloc_size += INIT_ALLOC_SIZE;
-				cls = REALLOC(cls, alloc_size);
-			}
-			if (lua_toboolean(l, i)) {
-				strcat(cls->luaStr, "true,");
-				sp += 5;
-			} else {
-				strcat(cls->luaStr, "false,");
-				sp += 6;
-			}
-			break;
-		case LUA_TNUMBER:
-			sprintf(df, "%f,", luaL_checknumber(l, i));
-			tmpStrLen = strlen(df);
-			if (sp + tmpStrLen >= alloc_size) {
-				alloc_size += INIT_ALLOC_SIZE;
-				cls = REALLOC(cls, alloc_size);
-			}
-			strcat(cls->luaStr, df);
-			sp += tmpStrLen;
-			break;
-		case LUA_TSTRING:
-			s = luaL_checklstring(l, i, &sl);
-			if (sp + sl >= alloc_size) {
-				alloc_size += INIT_ALLOC_SIZE;
-				cls = REALLOC(cls, alloc_size);
-			}
-
-			if (i == 1) {
-				strcpy(cls->luaStr, s);
-				strcat(cls->luaStr, "(");
-				sp++;
-			} else {
-				strcat(cls->luaStr, s);
-				strcat(cls->luaStr, ",");
-				sp++;
-			}
-			sp += sl;
-
-			break;
-		default:
-			THROW(STException, "throw exception!!!!!!!!!!!!");
-			break;
-		}
-	}
-
-	*(cls->luaStr + sp - 1) = '\0';
-	strcat(cls->luaStr, ")");
-
-	if (st_thread_create(st_main_call_p, (void*) cls, 0, 0) == NULL) {
-		return -1;
-	}
+LUA_API int lua_open_stlib(lua_State* l) {
+	luaL_register(l, LUA_ST_LIB_NAME, funs);
 	return 1;
 }
 
@@ -154,17 +95,5 @@ void dump_cstack(lua_State* l) {
 		}
 		printf("\n");
 	}
-}
-
-
-static const luaL_Reg funs[] = {
-		{"create_thread", create_thread},
-		{"msleep", msleep},
-		{NULL, NULL}
-};
-
-LUA_API int lua_open_stlib(lua_State* l) {
-	luaL_register(l, LUA_ST_LIB_NAME, funs);
-	return 1;
 }
 
