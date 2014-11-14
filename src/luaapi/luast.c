@@ -38,7 +38,7 @@ static int thread_run(lua_State* L) {
 	lua_xmove(L, tl, nargs);
 	lua_pushinteger(tl, nargs);
 
-	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0, 0) == NULL) {
+	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0) == NULL) {
 		lua_pushinteger(L, -1);
 	} else {
 		lua_pushinteger(L, 0);

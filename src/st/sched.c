@@ -164,8 +164,7 @@ int st_init(void)
   /*
    * Create idle thread
    */
-  _st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start,
-					     NULL, 0, 0);
+  _st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start, NULL, 0);
   if (!_st_this_vp.idle_thread)
     return -1;
   _st_this_vp.idle_thread->flags = _ST_FL_IDLE_THREAD;
@@ -271,45 +270,6 @@ void st_thread_exit(void *retval)
   /* Not going to land here */
 }
 
-
-int st_thread_join(_st_thread_t *thread, void **retvalp)
-{
-  _st_cond_t *term = thread->term;
-
-  /* Can't join a non-joinable thread */
-  if (term == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-  if (_ST_CURRENT_THREAD() == thread) {
-    errno = EDEADLK;
-    return -1;
-  }
-
-  /* Multiple threads can't wait on the same joinable thread */
-  if (term->wait_q.next != &term->wait_q) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  while (thread->state != _ST_ST_ZOMBIE) {
-    if (st_cond_timedwait(term, ST_UTIME_NO_TIMEOUT) != 0)
-      return -1;
-  }
-
-  if (retvalp)
-    *retvalp = thread->retval;
-
-  /*
-   * Remove target thread from the zombie queue and make it runnable.
-   * When it gets scheduled later, it will do the clean up.
-   */
-  thread->state = _ST_ST_RUNNABLE;
-  _ST_DEL_ZOMBIEQ(thread);
-  _ST_ADD_RUNQ(thread);
-
-  return 0;
-}
 
 
 void _st_thread_main(void)
@@ -517,8 +477,7 @@ void st_thread_interrupt(_st_thread_t *thread)
 }
 
 
-_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
-			       int joinable, int stk_size)
+_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_size)
 {
   _st_thread_t *thread;
   _st_stack_t *stack;
@@ -592,15 +551,6 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
 #else
   _ST_INIT_CONTEXT(thread, stack->sp, stack->bsp, _st_thread_main);
 #endif
-
-  /* If thread is joinable, allocate a termination condition variable */
-  if (joinable) {
-    thread->term = st_cond_new();
-    if (thread->term == NULL) {
-      _st_stack_free(thread->stack);
-      return NULL;
-    }
-  }
 
   /* Make thread runnable */
   thread->state = _ST_ST_RUNNABLE;
