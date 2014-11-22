@@ -394,6 +394,9 @@ void _st_iterate_threads(void);
     ST_SWITCH_IN_CB(_thread);             \
     ST_END_MACRO
 
+//printf("***** Switch out thread %lld \n", _thread);
+//	printf("***** Switch in thread %lld \n", _thread);
+
 /*
  * Restore a thread context that was saved by _ST_SWITCH_CONTEXT or
  * initialized by _ST_INIT_CONTEXT

@@ -34,6 +34,7 @@
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.479365659" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.47913316" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/include}&quot;"/>
+									<listOptionValue builtIn="false" value=""/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libs}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 								</option>
@@ -41,6 +42,7 @@
 								<option id="gnu.c.compiler.option.dialect.flags.884832437" name="Other dialect flags" superClass="gnu.c.compiler.option.dialect.flags" value="" valueType="string"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1334370697" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="LINUX"/>
+									<listOptionValue builtIn="false" value="MD_HAVE_EPOLL"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1150233251" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -52,7 +54,7 @@
 									<listOptionValue builtIn="false" value="check"/>
 									<listOptionValue builtIn="false" value="lua"/>
 								</option>
-								<option id="gnu.c.link.option.ldflags.911855129" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-lpthread -lm -ldl" valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.911855129" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-lpthread -lm -ldl -lhiredis" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.920143375" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -61,7 +63,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.421962515" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug"/>
 							<tool command="gcc" id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1863215108" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.flags.1004237166" name="Assembler flags" superClass="gnu.both.asm.option.flags" value=" -O0 -g3 -Wall -c -fmessage-length=0" valueType="string"/>
-								<option id="gnu.both.asm.option.include.paths.281093405" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath"/>
+								<option id="gnu.both.asm.option.include.paths.281093405" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.645622391" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>

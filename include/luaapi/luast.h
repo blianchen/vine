@@ -21,7 +21,7 @@
 
 //void st_context_init();
 
-LUA_API int lua_open_stlib(lua_State* l);
+LUA_API int luaopen_stlib(lua_State* l);
 
 
 ////////////////////////////////////////////////////////////

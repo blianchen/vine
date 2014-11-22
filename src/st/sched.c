@@ -215,10 +215,12 @@ st_switch_cb_t st_set_switch_out_cb(st_switch_cb_t cb)
 void *_st_idle_thread_start(void *arg)
 {
   _st_thread_t *me = _ST_CURRENT_THREAD();
-
+//  printf("@@@@@@ _st_idle_thread_start thread %lld , _st_active_count=%d\n", me, _st_active_count);
   while (_st_active_count > 0) {
     /* Idle vp till I/O is ready or the smallest timeout expired */
     _ST_VP_IDLE();
+
+//    printf("***** _st_idle_thread_start thread %lld , _st_active_count=%d\n", me, _st_active_count);
 
     /* Check sleep queue for expired threads */
     _st_vp_check_clock();
@@ -539,6 +541,8 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_siz
 #ifdef DEBUG
   _ST_ADD_THREADQ(thread);
 #endif
+
+//  printf("***** create thread %lld \n", thread);
 
   return thread;
 }

@@ -21,13 +21,14 @@
 #include <lualib.h>
 
 #include <luaapi/luast.h>
+#include <luaapi/luadb.h>
 
 #include <st/public.h>
 #include <stdint.h>
 
-
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
+
 
 	exception_init();
 
@@ -38,7 +39,9 @@ int main(void) {
 	lua_State* ls = luaL_newstate();
 	luaL_openlibs(ls);
 
-	lua_open_stlib(ls);
+	luaopen_stlib(ls);
+	luaopen_netlib(ls);
+	luaopen_dblib(ls);
 
 	luaL_loadfile(ls, "t.lua");
 	lua_pcall(ls, 0, 0, 0);

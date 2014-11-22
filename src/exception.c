@@ -55,6 +55,7 @@ Exception_T SQLException = {"SQLException"};
 //Exception_T AssertException = {"AssertException"};
 Exception_T MemoryException = {"MemoryException"};
 Exception_T STException = {"STException"};
+Exception_T NetException = {"NetException"};
 
 /* Thread specific Exception stack */
 ThreadData_T Exception_stack;

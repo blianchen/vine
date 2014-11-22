@@ -49,7 +49,8 @@ static int thread_run(lua_State* L) {
 
 static int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
-	st_usleep(ms * 1000);
+//	st_usleep(ms * 1000);
+	st_usleep(ms);
 	return 0;
 }
 
@@ -66,7 +67,7 @@ static const luaL_Reg funs[] = {
 		{NULL, NULL}
 };
 
-LUA_API int lua_open_stlib(lua_State* l) {
+LUA_API int luaopen_stlib(lua_State* l) {
 	luaL_register(l, LUA_ST_LIB_NAME, funs);
 	return 1;
 }

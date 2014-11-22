@@ -42,6 +42,7 @@ extern "C" {
 #define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\t')
 extern char* trim(char* str);
 
+int cpu_count(void);
 
 /*
  * 字节数组转为大写的16进制字符串，以'\0'终止

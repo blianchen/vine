@@ -19,6 +19,22 @@
 //#include <wchar.h>
 #endif
 
+int cpu_count(void) {
+	int n;
+#if defined (_SC_NPROCESSORS_ONLN)
+	n = (int) sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined (_SC_NPROC_ONLN)
+	n = (int) sysconf(_SC_NPROC_ONLN);
+#elif defined (HPUX)
+#include <sys/mpctl.h>
+	n = mpctl(MPC_GETNUMSPUS, 0, 0);
+#else
+	n = -1;
+	errno = ENOSYS;
+#endif
+	return n;
+}
+
 
 char* trim(char* str) {
 	char *start=NULL, *end=NULL;
@@ -34,8 +50,7 @@ char* trim(char* str) {
 	return start;
 }
 
-unsigned int ELFHash(char* str, unsigned int len)
-{
+unsigned int ELFHash(char* str, unsigned int len) {
    unsigned int hash = 0;
    unsigned int x    = 0;
    unsigned int i    = 0;

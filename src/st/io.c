@@ -392,41 +392,38 @@ _st_netfd_t *st_accept(_st_netfd_t *fd, struct sockaddr *addr, int *addrlen,
 #endif /* MD_ALWAYS_UNSERIALIZED_ACCEPT */
 
 
-int st_connect(_st_netfd_t *fd, const struct sockaddr *addr, int addrlen,
-	       st_utime_t timeout)
-{
-  int n, err = 0;
+int st_connect(_st_netfd_t *fd, const struct sockaddr *addr, int addrlen, st_utime_t timeout) {
+	int n, err = 0;
 
-  while (connect(fd->osfd, addr, addrlen) < 0) {
-    if (errno != EINTR) {
-      /*
-       * On some platforms, if connect() is interrupted (errno == EINTR)
-       * after the kernel binds the socket, a subsequent connect()
-       * attempt will fail with errno == EADDRINUSE.  Ignore EADDRINUSE
-       * iff connect() was previously interrupted.  See Rich Stevens'
-       * "UNIX Network Programming," Vol. 1, 2nd edition, p. 413
-       * ("Interrupted connect").
-       */
-      if (errno != EINPROGRESS && (errno != EADDRINUSE || err == 0))
-	return -1;
-      /* Wait until the socket becomes writable */
-      if (st_netfd_poll(fd, POLLOUT, timeout) < 0)
-	return -1;
-      /* Try to find out whether the connection setup succeeded or failed */
-      n = sizeof(int);
-      if (getsockopt(fd->osfd, SOL_SOCKET, SO_ERROR, (char *)&err,
-		     (socklen_t *)&n) < 0)
-	return -1;
-      if (err) {
-	errno = err;
-	return -1;
-      }
-      break;
-    }
-    err = 1;
-  }
+	while (connect(fd->osfd, addr, addrlen) < 0) {
+		if (errno != EINTR) {
+			/*
+			 * On some platforms, if connect() is interrupted (errno == EINTR)
+			 * after the kernel binds the socket, a subsequent connect()
+			 * attempt will fail with errno == EADDRINUSE.  Ignore EADDRINUSE
+			 * iff connect() was previously interrupted.  See Rich Stevens'
+			 * "UNIX Network Programming," Vol. 1, 2nd edition, p. 413
+			 * ("Interrupted connect").
+			 */
+			if (errno != EINPROGRESS && (errno != EADDRINUSE || err == 0))
+				return -1;
+			/* Wait until the socket becomes writable */
+			if (st_netfd_poll(fd, POLLOUT, timeout) < 0)
+				return -1;
+			/* Try to find out whether the connection setup succeeded or failed */
+			n = sizeof(int);
+			if (getsockopt(fd->osfd, SOL_SOCKET, SO_ERROR, (char *) &err, (socklen_t *) &n) < 0)
+				return -1;
+			if (err) {
+				errno = err;
+				return -1;
+			}
+			break;
+		}
+		err = 1;
+	}
 
-  return 0;
+	return 0;
 }
 
 
