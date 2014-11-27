@@ -12,6 +12,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <st/st.h>
+
 
 #ifndef offsetof
 #define offsetof(type, identifier) ((size_t)&(((type *)0)->identifier))

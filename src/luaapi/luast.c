@@ -9,8 +9,7 @@
 #include <string.h>
 
 #include <mem.h>
-#include <exception/STException.h>
-#include <st/public.h>
+#include <exception/st_exception.h>
 
 #include <luaapi/luast.h>
 
@@ -49,8 +48,8 @@ static int thread_run(lua_State* L) {
 
 static int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
-//	st_usleep(ms * 1000);
-	st_usleep(ms);
+	st_usleep(ms * 1000);
+//	st_usleep(ms);
 	return 0;
 }
 

@@ -48,21 +48,14 @@
 
 
 /* Placeholder for systems exceptions. */
-Exception_T SQLException = {"SQLException"};
-#ifdef ZILD_PACKAGE_PROTECTED
-#pragma GCC visibility push(hidden)
-#endif
-//Exception_T AssertException = {"AssertException"};
-Exception_T MemoryException = {"MemoryException"};
-Exception_T STException = {"STException"};
-Exception_T NetException = {"NetException"};
+Exception_T sys_exception = {"sys_exception"};
+Exception_T sql_exception = {"sql_exception"};
+Exception_T memory_exception = {"memory_exception"};
+Exception_T st_exception = {"st_exception"};
+Exception_T net_exception = {"net_exception"};
 
 /* Thread specific Exception stack */
 ThreadData_T Exception_stack;
-#ifdef ZILD_PACKAGE_PROTECTED
-#pragma GCC visibility pop
-#endif
-
 
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 

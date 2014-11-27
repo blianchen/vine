@@ -4,6 +4,36 @@
 
 #include <errno.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define i2a(i) (x[0] = ((i) / 10) + '0', x[1] = ((i) % 10) + '0')
+
+static inline int a2i(const char *a, int l) {
+	int n = 0;
+	for (; *a && l--; a++)
+		n = n * 10 + (*a) - '0';
+	return n;
+}
+
+//// trim实现，会修改原字符串内容
+//#define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\f'||(x)=='\b'||(x)=='\t')
+#define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\t')
+
+extern char* trim(char* str);
+
+int cpu_count(void);
+
+/*
+ * 字节数组转为大写的16进制字符串，以'\0'终止
+ */
+void byteToUperHexStr(const unsigned char* source, int sourceLen, char* dest);
+/*
+ * 16进制字符串（不区分大小写）转为字节数组
+ * dest 长度为 sourceLen / 2
+ */
+void hexStrToByte(const char* source, int sourceLen, unsigned char* dest);
 
 #ifdef WIN32
 #define getLastError() GetLastError()
@@ -30,30 +60,6 @@ extern char* getLastErrorText();
 		} \
 		*bp = '\0'; \
 	} while (0);
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-//// trim实现，会修改原字符串内容
-//#define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\f'||(x)=='\b'||(x)=='\t')
-#define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\t')
-extern char* trim(char* str);
-
-int cpu_count(void);
-
-/*
- * 字节数组转为大写的16进制字符串，以'\0'终止
- */
-void byteToUperHexStr(const unsigned char* source, int sourceLen, char* dest);
-/*
- * 16进制字符串（不区分大小写）转为字节数组
- * dest 长度为 sourceLen / 2
- */
-void hexStrToByte(const char* source, int sourceLen, unsigned char* dest);
-
 
 #ifdef __cplusplus
 }

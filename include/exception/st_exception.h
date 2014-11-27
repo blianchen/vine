@@ -10,7 +10,7 @@
  * @see Exception.h, Mem.h
  * @file
  */
-extern Exception_T STException;
+extern Exception_T st_exception;
 
 
 #endif

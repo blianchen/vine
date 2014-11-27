@@ -22,8 +22,9 @@
 
 #include <luaapi/luast.h>
 #include <luaapi/luadb.h>
+#include <luaapi/luanet.h>
 
-#include <st/public.h>
+#include <st/st.h>
 #include <stdint.h>
 
 int main(void) {

@@ -1,37 +1,12 @@
-/*
- * Copyright (C) Tildeslash Ltd. All rights reserved.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- *
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.
- */
 
+#ifndef _STR_H_
+#define _STR_H_
 
-#ifndef STR_INCLUDED
-#define STR_INCLUDED
 #include <stdarg.h>
 
 
 /**
  * General purpose <b>String</b> <b>Class methods</b>.
- *
- * @file
  */
 
 
@@ -50,8 +25,7 @@
  * @return true if s is NULL or the empty string, otherwise false
  * @hideinitializer
  */
-//#define STR_UNDEF(s) (! STR_DEF(s))
-#define STR_UNDEF(s) (!(s) || !(*(s)))
+#define STR_UNDEF(s) (! STR_DEF(s))
 
 
 /**
@@ -62,7 +36,7 @@
  * @param b The string to test for equality with <code>a</code>
  * @return true if a equals b, otherwise false
  */
-int Str_isEqual(const char *a, const char *b);
+int str_isEqual(const char *a, const char *b);
 
 
 /**
@@ -72,7 +46,7 @@ int Str_isEqual(const char *a, const char *b);
  * @param b The string to test for equality with <code>a</code>
  * @return true if a equals b, otherwise false
  */
-int Str_isByteEqual(const char *a, const char *b);
+int str_isByteEqual(const char *a, const char *b);
 
 
 /**
@@ -82,7 +56,7 @@ int Str_isByteEqual(const char *a, const char *b);
  * @param b The <i>sub-string</i> to test a against
  * @return true if a starts with b, otherwise false
  */
-int Str_startsWith(const char *a, const char *b);
+int str_startsWith(const char *a, const char *b);
 
 
 /**
@@ -95,7 +69,7 @@ int Str_startsWith(const char *a, const char *b);
  * @param n The number of bytes to copy
  * @return A pointer to dest
  */
-char *Str_copy(char *dest, const char *src, int n);
+//char *str_copy(char *dest, const char *src, int n);
 
 
 /**
@@ -104,7 +78,7 @@ char *Str_copy(char *dest, const char *src, int n);
  * @return A pointer to the duplicated string, NULL if s is NULL
  * @exception MemoryException if allocation failed
  */
-char *Str_dup(const char *s);
+char *str_dup(const char *s);
 
 
 /**
@@ -117,7 +91,7 @@ char *Str_dup(const char *s);
  * @exception MemoryException if allocation failed
  * @exception AssertException if n is less than 0
  */
-char *Str_ndup(const char *s, int n);
+char *str_ndup(const char *s, int n);
 
 
 /**
@@ -127,7 +101,7 @@ char *Str_ndup(const char *s, int n);
  * @return The new String or NULL if the string could not be created
  * @exception MemoryException if memory allocation fails
  */
-char *Str_cat(const char *s, ...) __attribute__((format (printf, 1, 2)));
+char *str_cat(const char *s, ...) __attribute__((format (printf, 1, 2)));
 
 
 /**
@@ -138,7 +112,7 @@ char *Str_cat(const char *s, ...) __attribute__((format (printf, 1, 2)));
  * @return a new String concating s and va_list or NULL on error
  * @exception MemoryException if memory allocation fails
  */
-char *Str_vcat(const char *s, va_list ap);
+char *str_vcat(const char *s, va_list ap);
 
 
 /**
@@ -147,7 +121,7 @@ char *Str_vcat(const char *s, va_list ap);
  * @return The integer represented by the string argument.
  * @exception SQLException If a parse error occurred
  */
-int Str_parseInt(const char *s);
+int str_parseInt(const char *s);
 
 
 /**
@@ -156,7 +130,7 @@ int Str_parseInt(const char *s);
  * @return The long long represented by the string argument.
  * @exception SQLException If a parse error occurred
  */
-long long Str_parseLLong(const char *s);
+long long str_parseLLong(const char *s);
 
 
 /**
@@ -165,7 +139,7 @@ long long Str_parseLLong(const char *s);
  * @return The double represented by the string argument.
  * @exception SQLException If a parse error occurred
  */
-double Str_parseDouble(const char *s);
+double str_parseDouble(const char *s);
 
 
 #endif

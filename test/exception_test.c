@@ -7,12 +7,12 @@
 
 #include "core_test.h"
 
-#include <exception/MemoryException.h>
+#include <exception/memory_exception.h>
 
 ////// 移植的，原来有完整的测试
 
 void thr() {
-	THROW(MemoryException, "A exception");
+	THROW(memory_exception, "A exception");
 }
 
 void indirect() {
@@ -24,7 +24,7 @@ START_TEST(test_exception_trycatch) {
 	TRY {
 		thr();
 		e = 1;
-	} CATCH(MemoryException) {
+	} CATCH(memory_exception) {
 		e = 2;
 	}
 	END_TRY
@@ -37,7 +37,7 @@ START_TEST(test_exception_indirect_throw) {
 	TRY {
 		indirect();
 		e = 1;
-	} CATCH(MemoryException) {
+	} CATCH(memory_exception) {
 		e = 2;
 	}
 	END_TRY

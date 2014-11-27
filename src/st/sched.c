@@ -140,6 +140,7 @@ int st_init(void)
     return 0;
   }
 
+  st_set_eventsys(ST_EVENTSYS_POLL);
   /* We can ignore return value here */
   st_set_eventsys(ST_EVENTSYS_DEFAULT);
 

@@ -12,8 +12,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include <exception/NetException.h>
-#include <st/public.h>
+#include <exception/net_exception.h>
+#include <st/st.h>
 
 #define LUA_NET_LIB_NAME "net"
 

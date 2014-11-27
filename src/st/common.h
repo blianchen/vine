@@ -64,7 +64,7 @@
 #define	ST_HIDDEN   static
 #endif
 
-#include "public.h"
+#include "st/st.h"
 #include "md.h"
 
 

@@ -10,7 +10,7 @@
  * @see Exception.h, Mem.h
  * @file
  */
-extern Exception_T NetException;
+extern Exception_T net_exception;
 
 
 #endif

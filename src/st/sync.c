@@ -56,17 +56,16 @@ static st_utime_t (*_st_utime)(void) = NULL;
  * Time functions
  */
 
-st_utime_t st_utime(void)
-{
-  if (_st_utime == NULL) {
+st_utime_t st_utime(void) {
+	if (_st_utime == NULL) {
 #ifdef MD_GET_UTIME
-    MD_GET_UTIME();
+		MD_GET_UTIME();
 #else
 #error Unknown OS
 #endif
-  }
+	}
 
-  return (*_st_utime)();
+	return (*_st_utime)();
 }
 
 

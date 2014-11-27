@@ -11,6 +11,7 @@ RM := rm -rf
 -include test/subdir.mk
 -include src/st/subdir.mk
 -include src/luaapi/subdir.mk
+-include src/db/subdir.mk
 -include src/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -32,7 +33,7 @@ all: corelib
 corelib: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/blc/c/score/libs" -lpthread -lm -ldl -lhiredis -o "corelib" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/blc/c/score/libs" -lpthread -lm -ldl -lhiredis -lpq -o "corelib" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

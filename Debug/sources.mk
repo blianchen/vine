@@ -17,4 +17,5 @@ test \
 src \
 src/st \
 src/luaapi \
+src/db \
 

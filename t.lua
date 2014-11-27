@@ -56,14 +56,16 @@ end
 
 function dbtest1()
 print("---------db_connect start 111 " .. string.format("%d", st.mstime()));
-	db.connect();
+	local c = db.connect();
 print("---------db_connect end 111 " .. string.format("%d", st.mstime()));
+	print("-------------- get key " .. db.command(c));
 end
 
 function dbtest2()
 print("---------db_connect start 222 " .. string.format("%d", st.mstime()));
-	db.connect();
+	local c = db.connect();
 print("---------db_connect end 222 " .. string.format("%d", st.mstime()));
+print("-------------- get key " .. db.command(c));
 end
 
 

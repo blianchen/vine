@@ -23,17 +23,19 @@
  */
 
 
-#ifndef SQLEXCEPTION_INCLUDED
-#define SQLEXCEPTION_INCLUDED
+#ifndef MEMORYEXCEPTION_INCLUDED
+#define MEMORYEXCEPTION_INCLUDED
 #include <exception/exception.h>
 
 
 /**
- * Signals that an SQL specific exception has occurred.
- * @see Exception.h
+ * Thrown to indicate that a memory allocation failed. Every object 
+ * constructor method may throw a MemoryException if the underlying
+ * allocator failed.
+ * @see Exception.h, Mem.h
  * @file
  */
-extern Exception_T SQLException;
+extern Exception_T memory_exception;
 
 
 #endif

@@ -8,7 +8,6 @@
 #include <luaapi/luanet.h>
 
 #include <sys/ioctl.h>
-#include <st/common.h>
 
 static int read_net_address(const char *str, struct sockaddr_in *sin) {
 	char host[128], *p;

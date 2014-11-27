@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <exception/MemoryException.h>
+#include <exception/memory_exception.h>
 #include <utils.h>
 
 /**
@@ -48,7 +48,7 @@ void *mem_malloc(int size, const char *func, const char *file, int line){
 	assert(size > 0);
 	void *p = malloc(size);
 	if (! p)
-		exception_throw(&(MemoryException), func, file, line, "%s, size=%d", getLastErrorText(), size);
+		exception_throw(&(memory_exception), func, file, line, "%s, size=%d", getLastErrorText(), size);
 	return p;
 }
 
@@ -58,7 +58,7 @@ void *mem_calloc(int count, long size, const char *func, const char *file, int l
 //	assert(size > 0);
 	void *p = calloc(count, size);
 	if (! p)
-		exception_throw(&(MemoryException), func, file, line, "%s, size=%d", getLastErrorText(), count*size);
+		exception_throw(&(memory_exception), func, file, line, "%s, size=%d", getLastErrorText(), count*size);
 	return p;
 }
 
@@ -74,7 +74,7 @@ void *mem_realloc(void *p, int size, const char *func, const char *file, int lin
 //	assert(size > 0);
 	p = realloc(p, size);
 	if (! p)
-		exception_throw(&(MemoryException), func, file, line, "%s, size=%d", getLastErrorText(), size);
+		exception_throw(&(memory_exception), func, file, line, "%s, size=%d", getLastErrorText(), size);
 	return p;
 }
 
