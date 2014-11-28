@@ -18,4 +18,5 @@ src \
 src/st \
 src/luaapi \
 src/db \
+libs \
 

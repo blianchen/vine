@@ -28,7 +28,7 @@ function process_session(clisock)
 		local n, s = net.read(clisock);
 	net.write(clisock, resp);
 	net.close(clisock);
-		print("---------read from socket byte n==, " .. (n) .. "sss==" .. s)
+--		print("---------read from socket byte n==, " .. (n) .. "sss==" .. s)
 --	end
 end
 
@@ -41,7 +41,7 @@ function servsock()
 
 		local player = st.create_thread(process_session);
 		st.run_thread(player, clisock);
-		print("-------------create session thread.....");
+	--	print("-------------create session thread.....");
 	end
 end
 
@@ -76,9 +76,9 @@ function luafun()
 
 
 --print("time11111===" .. string.format("%d", st.mstime()))
-	for i=1,4 do
+	for i=1,1 do
 		--print("---------create_thread " .. i);
-		cos[i] = st.create_thread(do_calc);
+		cos[i] = st.create_thread(servsock);
 	end
 cos[5] = st.create_thread(dbtest1);
 cos[6] = st.create_thread(dbtest2);
@@ -86,8 +86,8 @@ cos[6] = st.create_thread(dbtest2);
 
 
 --print("time33333===" .. string.format("%d", st.mstime()))
-	for i=1,6 do
-		st.run_thread(cos[i], i);
+	for i=1,1 do
+		st.run_thread(cos[i]);
 	end
 
 

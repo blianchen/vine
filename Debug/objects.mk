@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lcheck -llua
+LIBS := -lcheck
 

@@ -21,6 +21,9 @@
 
 #define LUA_ST_LIB_NAME "st"
 
+//// lua线程表在全局环境中的索引
+extern char LUA_THREAD_GLOBAL_IDX;
+
 //void st_context_init();
 
 LUA_API int luaopen_stlib(lua_State* l);

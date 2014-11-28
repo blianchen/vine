@@ -13,6 +13,7 @@ RM := rm -rf
 -include src/luaapi/subdir.mk
 -include src/db/subdir.mk
 -include src/subdir.mk
+-include libs/subdir.mk
 -include subdir.mk
 -include objects.mk
 

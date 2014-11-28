@@ -27,22 +27,57 @@
 #include <st/st.h>
 #include <stdint.h>
 
+
+static const luaL_Reg uselualibs[] = {
+  {"", luaopen_base},
+  {LUA_LOADLIBNAME, luaopen_package},
+  {LUA_TABLIBNAME, luaopen_table},
+//  {LUA_IOLIBNAME, luaopen_io},
+  {LUA_OSLIBNAME, luaopen_os},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_MATHLIBNAME, luaopen_math},
+  {LUA_DBLIBNAME, luaopen_debug},
+  {NULL, NULL}
+};
+
+
+LUALIB_API void use_lua_openlibs (lua_State *L) {
+  const luaL_Reg *lib = uselualibs;
+  for (; lib->func; lib++) {
+    lua_pushcfunction(L, lib->func);
+    lua_pushstring(L, lib->name);
+    lua_call(L, 1, 0);
+  }
+}
+
+
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
 
 
 	exception_init();
 
-	if (st_init() < 0) {
-//		THROW(st_exception, "st init error.");
-	}
 
 	lua_State* ls = luaL_newstate();
-	luaL_openlibs(ls);
+//	luaL_openlibs(ls);
+	use_lua_openlibs(ls);
 
 	luaopen_stlib(ls);
 	luaopen_netlib(ls);
 	luaopen_dblib(ls);
+
+	/*
+	 * register a table to anchor lua coroutines reliably:
+	 * {([int]ref) = [cort]}
+	 */
+	lua_pushlightuserdata(ls, &LUA_THREAD_GLOBAL_IDX);
+	lua_newtable(ls);
+	lua_rawset(ls, LUA_GLOBALSINDEX);
+
+
+	if (st_init() < 0) {
+//		THROW(st_exception, "st init error.");
+	}
 
 	luaL_loadfile(ls, "t.lua");
 	lua_pcall(ls, 0, 0, 0);
