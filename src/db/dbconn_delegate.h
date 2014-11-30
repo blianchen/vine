@@ -13,11 +13,14 @@ typedef struct T *T;
 typedef struct cop_t {
 	const char *name;
 	// Event handler class methods
-//	void (*onstop)(void);
+	void (*onconn)(T C);
+	void (*onstop)(T C);
 	// Methods
 	T (*new)(uri_t url);
+	int (*connstate)(T C);
 	void (*free)(T *C);
-	void (*setQueryTimeout)(T C, int ms);
+	int (*getsocket)(T C);
+//	void (*setQueryTimeout)(T C, int ms);
 //	void (*setMaxRows)(T C, int max);
 	int (*ping)(T C);
 	int (*beginTransaction)(T C);
@@ -26,7 +29,8 @@ typedef struct cop_t {
 //	long long (*lastRowId)(T C);
 //	long long (*rowsChanged)(T C);
 	int (*execute)(T C, const char *sql, va_list ap);
-	dbrs_t (*executeQuery)(T C, const char *sql, va_list ap);
+//	dbrs_t (*executeQuery)(T C, const char *sql, va_list ap);
+	dbrs_t (*getrs)(T C);
 	dbpst_t (*prepareStatement)(T C, const char *sql, va_list ap);
 	const char *(*getDbLastError)(T C);
 }*cop_t;

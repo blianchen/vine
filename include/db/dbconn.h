@@ -2,7 +2,6 @@
 #define _DBCONNECTON_H_
 
 #include <uri.h>
-
 #include <db/dbrs.h>
 
 #define T dbconn_t

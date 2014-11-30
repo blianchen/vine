@@ -5,8 +5,6 @@
  *      Author: blc
  */
 
-#include <db/dbconn.h>
-
 #include <stdio.h>
 #include <time.h>
 
@@ -15,13 +13,19 @@
 #include <mem.h>
 #include <timeutil.h>
 #include <str.h>
+#include <logger.h>
+
+#include <st/st.h>
 
 #include <db/dbconfig.h>
 #include <db/dbpool.h>
 #include <db/dbpst.h>
 #include "dbconn_delegate.h"
+#include <db/dbconn.h>
 
-
+#ifdef HAVE_HIREDIS
+extern const struct cop_t rediscops;
+#endif
 #ifdef HAVE_LIBMYSQLCLIENT
 extern const struct cop_t mysqlcops;
 #endif
@@ -36,6 +40,9 @@ extern const struct cop_t oraclesqlcops;
 #endif
 
 static const struct cop_t *cops[] = {
+#ifdef HAVE_HIREDIS
+		&rediscops,
+#endif
 #ifdef HAVE_LIBMYSQLCLIENT
         &mysqlcops,
 #endif
@@ -63,6 +70,7 @@ struct dbconn_s {
 	time_t lastAccessedTime;
 	dbrs_t resultSet;
 	dbconn_delegate_t D;
+	st_netfd_t nfd;
 	dbpool_t parent;
 };
 
@@ -70,22 +78,21 @@ struct dbconn_s {
 
 static cop_t getOp(const char *protocol) {
 	int i;
-	for (i = 0; cops[i]; i++)
+	for (i = 0; cops[i]; i++) {
 		if (str_startsWith(protocol, cops[i]->name))
 			return (cop_t) cops[i];
+	}
 	return NULL;
 }
 
 static int setDelegate(T C) {
 	C->op = getOp(uri_getProtocol(C->url));
 	if (!C->op) {
-		THROW(sql_exception, "database protocol '%s' not supported", uri_getProtocol(C->url));
+		LOG_WARN("database protocol '%s' not supported", uri_getProtocol(C->url));
 		return 0;
 	}
-	C->D = C->op->new(C->url);
-	return (C->D != NULL);
+	return 1;
 }
-
 
 static void freePrepared(T C) {
 	while (! vector_isEmpty(C->prepared)) {
@@ -111,8 +118,30 @@ dbconn_t dbconn_new(void *pool) {
 	C->timeout = SQL_DEFAULT_TIMEOUT;
 	C->url = dbpool_getURL(pool);
 	C->lastAccessedTime = time_now();
-	if (!setDelegate(C))
+	if (!setDelegate(C)) {
+		return NULL;
+	}
+	C->D = C->op->new(C->url);
+	if (C->D == NULL) {
 		dbconn_free(&C);
+		return NULL;
+	}
+
+	//// st thread
+	C->nfd = st_netfd_open_socket((C->op)->getsocket(C->D));
+	/* Wait until the socket becomes writable */
+	if (st_netfd_poll(C->nfd, POLLOUT, -1) < 0) {
+		dbconn_free(&C);
+		return NULL;
+	}
+
+	if (!(C->op)->connstate(C->D)) {
+		dbconn_free(&C);
+		return NULL;
+	}
+
+	(C->op)->onconn(C->D);
+
 	return C;
 }
 
@@ -158,7 +187,8 @@ void dbconn_setQueryTimeout(T C, int ms) {
 	assert(C);
 	assert(ms >= 0);
 	C->timeout = ms;
-	C->op->setQueryTimeout(C->D, ms);
+//	C->op->setQueryTimeout(C->D, ms);
+	//// 超时改用 st 库的超时
 }
 
 int dbconn_getQueryTimeout(T C) {
@@ -260,6 +290,14 @@ void dbconn_execute(T C, const char *sql, ...) {
 	va_end(ap);
 	if (!success)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
+	if (!C->resultSet)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
 }
 
 dbrs_t dbconn_executeQuery(T C, const char *sql, ...) {
@@ -269,8 +307,16 @@ dbrs_t dbconn_executeQuery(T C, const char *sql, ...) {
 		dbrs_free(&C->resultSet);
 	va_list ap;
 	va_start(ap, sql);
-	C->resultSet = C->op->executeQuery(C->D, sql, ap);
+	int success = C->op->execute(C->D, sql, ap);
 	va_end(ap);
+	if (!success)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
 	if (!C->resultSet)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 	return C->resultSet;
@@ -298,5 +344,5 @@ const char *dbconn_getLastError(T C) {
 
 
 int dbconn_isSupported(const char *url) {
-        return (url ? (getOp(url) != NULL) : 0);
+	return (url ? (getOp(url) != NULL) : 0);
 }

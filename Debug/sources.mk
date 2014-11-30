@@ -17,6 +17,7 @@ test \
 src \
 src/st \
 src/luaapi \
+src/db/redis \
 src/db \
 libs \
 

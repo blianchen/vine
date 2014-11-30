@@ -6,20 +6,6 @@
 extern "C" {
 #endif
 
-/** MySQL default server port number */
-#define MYSQL_DEFAULT_PORT 3306
-
-/** PostgreSQL default server port number */
-#define POSTGRESQL_DEFAULT_PORT 5432
-
-/** Oracle default server port number */
-#define ORACLE_DEFAULT_PORT 1521
-
-#define REDIS_DEFAULT_PORT 6379
-
-#define HTTP_DEFAULT_PORT 80
-
-
 int uri_decode(const char * src, int len, char * des);
 
 /*

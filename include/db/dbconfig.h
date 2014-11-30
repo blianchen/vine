@@ -6,6 +6,8 @@
 /* Version number of package */
 #define VERSION "0.1"
 
+#define HAVE_HIREDIS 1
+
 /* Define to 1 to enable mysql */
 //#define HAVE_LIBMYSQLCLIENT 1
 
@@ -39,5 +41,19 @@
  * inactive connections
  */
 #define SQL_DEFAULT_CONNECTION_TIMEOUT 30
+
+
+/** MySQL default server port number */
+#define MYSQL_DEFAULT_PORT 3306
+
+/** PostgreSQL default server port number */
+#define POSTGRESQL_DEFAULT_PORT 5432
+
+/** Oracle default server port number */
+#define ORACLE_DEFAULT_PORT 1521
+
+#define REDIS_DEFAULT_PORT 6379
+
+#define HTTP_DEFAULT_PORT 80
 
 #endif

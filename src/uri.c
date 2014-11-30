@@ -15,6 +15,8 @@
 #include <mem.h>
 #include <str.h>
 
+#include <db/dbconfig.h>
+
 #define uchar_t unsigned char
 
 const char HEX2DEC[256] = {

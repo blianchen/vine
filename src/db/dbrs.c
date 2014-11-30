@@ -5,6 +5,7 @@
 #include <str.h>
 #include <exception/sql_exception.h>
 #include <utils.h>
+#include <timeutil.h>
 
 #include <db/dbconfig.h>
 #include <db/dbrs.h>
@@ -32,7 +33,6 @@ static inline int getIndex(T R, const char *name) {
 	THROW(sql_exception, "Invalid column name '%s'", name ? name : "null");
 	return -1;
 }
-
 
 
 /* ----------------------------------------------------- Protected methods */
@@ -149,39 +149,39 @@ const void *dbrs_getBlobByName(T R, const char *columnName, int *size) {
 
 /* --------------------------------------------------------- Date and Time */
 
-//time_t dbrs_getTimestamp(T R, int columnIndex) {
-//	assert(R);
-//	time_t t = 0;
-//	if (R->op->getTimestamp) {
-//		t = R->op->getTimestamp(R->D, columnIndex);
-//	} else {
-//		const char *s = dbrs_getString(R, columnIndex);
-//		if (s && *(s))
-//			t = Time_toTimestamp(s);
-//	}
-//	return t;
-//}
-//
-//time_t dbrs_getTimestampByName(T R, const char *columnName) {
-//	assert(R);
-//	return dbrs_getTimestamp(R, getIndex(R, columnName));
-//}
-//
-//struct tm dbrs_getDateTime(T R, int columnIndex) {
-//	assert(R);
-//	struct tm t = { .tm_year = 0 };
-//	if (R->op->getDateTime) {
-//		R->op->getDateTime(R->D, columnIndex, &t);
-//	} else {
-//		const char *s = dbrs_getString(R, columnIndex);
-//		if (s && *(s))
-//			Time_toDateTime(s, &t);
-//	}
-//	return t;
-//}
-//
-//struct tm dbrs_getDateTimeByName(T R, const char *columnName) {
-//	assert(R);
-//	return dbrs_getDateTime(R, getIndex(R, columnName));
-//}
+time_t dbrs_getTimestamp(T R, int columnIndex) {
+	assert(R);
+	time_t t = 0;
+	if (R->op->getTimestamp) {
+		t = R->op->getTimestamp(R->D, columnIndex);
+	} else {
+		const char *s = dbrs_getString(R, columnIndex);
+		if (s && *(s))
+			t = time_toTimestamp(s);
+	}
+	return t;
+}
+
+time_t dbrs_getTimestampByName(T R, const char *columnName) {
+	assert(R);
+	return dbrs_getTimestamp(R, getIndex(R, columnName));
+}
+
+struct tm dbrs_getDateTime(T R, int columnIndex) {
+	assert(R);
+	struct tm t = { .tm_year = 0 };
+	if (R->op->getDateTime) {
+		R->op->getDateTime(R->D, columnIndex, &t);
+	} else {
+		const char *s = dbrs_getString(R, columnIndex);
+		if (s && *(s))
+			time_toDateTime(s, &t);
+	}
+	return t;
+}
+
+struct tm dbrs_getDateTimeByName(T R, const char *columnName) {
+	assert(R);
+	return dbrs_getDateTime(R, getIndex(R, columnName));
+}
 
