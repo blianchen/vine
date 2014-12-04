@@ -18,6 +18,7 @@ src \
 src/st \
 src/luaapi \
 src/db/redis \
+src/db/postgresql \
 src/db \
 libs \
 

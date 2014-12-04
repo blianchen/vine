@@ -4,6 +4,8 @@
 #include <mem.h>
 #include <exception/sql_exception.h>
 
+#include <st/st.h>
+
 #include <db/dbconfig.h>
 #include <db/dbrs.h>
 #include <db/dbpst.h>
@@ -11,7 +13,6 @@
 /**
  * Implementation of the PreparedStatement interface 
  */
-
 
 /* ----------------------------------------------------------- Definitions */
 
@@ -21,6 +22,8 @@ struct dbpst_S {
 	int parameterCount;
 	dbrs_t resultSet;
 	dbpst_delegate_t D;
+	st_netfd_t nfd;
+	int timeout;
 };
 
 
@@ -45,6 +48,7 @@ T dbpst_new(dbpst_delegate_t D, pop_t op, int parameterCount) {
 	P->D = D;
 	P->op = op;
 	P->parameterCount = parameterCount;
+	P->timeout = SQL_DEFAULT_TIMEOUT;
 	return P;
 }
 
@@ -96,19 +100,32 @@ void dbpst_setTimestamp(T P, int parameterIndex, time_t x) {
 
 /* -------------------------------------------------------- Public methods */
 
-
 void dbpst_execute(T P) {
 	assert(P);
 	clearResultSet(P);
 	P->op->execute(P->D);
+
+	if (st_netfd_poll(P->nfd, POLLIN, P->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(P));
+
+	P->resultSet = P->op->getrs(P->D);
+
+	if (!P->resultSet)
+		THROW(sql_exception, "%s", dbconn_getLastError(P));
 }
 
 dbrs_t dbpst_executeQuery(T P) {
 	assert(P);
 	clearResultSet(P);
-	P->resultSet = P->op->executeQuery(P->D);
+	P->op->execute(P->D);
+
+	if (st_netfd_poll(P->nfd, POLLIN, P->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(P));
+
+	P->resultSet = P->op->getrs(P->D);
+
 	if (!P->resultSet)
-		THROW(sql_exception, "dbpst_executeQuery");
+		THROW(sql_exception, "%s", dbconn_getLastError(P));
 	return P->resultSet;
 }
 
@@ -120,8 +137,18 @@ long long dbpst_rowsChanged(T P) {
 
 /* ------------------------------------------------------------ Properties */
 
-
 int dbpst_getParameterCount(T P) {
 	assert(P);
 	return P->parameterCount;
+}
+
+void dbpst_setQueryTimeout(T P, int ms) {
+	assert(P);
+	assert(ms >= 0);
+	P->timeout = ms;
+}
+
+int dbpst_getQueryTimeout(T P) {
+	assert(P);
+	return P->timeout;
 }

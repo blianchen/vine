@@ -2,6 +2,8 @@
 #ifndef _DBPST_DELEGATE_H_
 #define _DBPST_DELEGATE_H_
 
+#include <db/dbrs.h>
+
 /**
  * This interface defines the <b>contract</b> for the concrete database 
  * implementation used for delegation in the PreparedStatement class.
@@ -19,8 +21,9 @@ typedef struct pop_t {
 	void (*setDouble)(T P, int parameterIndex, double x);
 	void (*setTimestamp)(T P, int parameterIndex, time_t timestamp);
 	void (*setBlob)(T P, int parameterIndex, const void *x, int size);
-	void (*execute)(T P);
-	dbrs_t (*executeQuery)(T P);
+	int (*execute)(T P);
+	dbrs_t (*getrs)(T P);
+//	dbrs_t (*executeQuery)(T P);
 	long long (*rowsChanged)(T P);
 }*pop_t;
 

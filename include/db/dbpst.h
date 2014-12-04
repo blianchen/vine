@@ -253,5 +253,9 @@ long long dbpst_rowsChanged(T P);
  */
 int dbpst_getParameterCount(T P);
 
+void dbpst_setQueryTimeout(T P, int ms);
+
+int dbpst_getQueryTimeout(T P);
+
 #undef T
 #endif

@@ -1,27 +1,3 @@
-/*
- * Copyright (C) Tildeslash Ltd. All rights reserved.
- * Copyright (c) 1994,1995,1996,1997 by David R. Hanson.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- *
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.
- */
 
 #ifndef EXCEPTION_INCLUDED
 #define EXCEPTION_INCLUDED
@@ -252,7 +228,6 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
 #define THROW(e, cause, ...) \
         exception_throw(&(e), __func__, __FILE__, __LINE__, cause, ##__VA_ARGS__, NULL)
 
-
 /**
  * Re-throws an exception. In a CATCH or ELSE block clients can use RETHROW
  * to re-throw the Exception
@@ -261,14 +236,12 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
 #define RETHROW exception_throw(Exception_frame.exception, \
         Exception_frame.func, Exception_frame.file, Exception_frame.line, NULL)
 
-
 /**
  * Clients <b>must</b> use this macro instead of C return statements
  * inside a try-block
  * @hideinitializer
  */
 #define RETURN switch((pop_Exception_stack,0)) default:return
-
 
 /**
  * Defines a block of code that can potentially throw an exception
@@ -283,7 +256,6 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
         Exception_flag = setjmp(Exception_frame.env); \
         if (Exception_flag == Exception_entered) {
                 
-
 /**
  * Defines a block containing code for handling an exception thrown in 
  * the TRY block.
@@ -294,7 +266,6 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
                 if (Exception_flag == Exception_entered) pop_Exception_stack; \
         } else if (Exception_frame.exception == &(e)) { \
                 Exception_flag = Exception_handled; 
-
 
 /**
  * Defines a block containing code for handling any exception thrown in 
@@ -307,7 +278,6 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
         } else { \
                 Exception_flag = Exception_handled;
 
-
 /**
  * Defines a block of code that is subsequently executed whether an 
  * exception is thrown or not
@@ -318,7 +288,6 @@ void exception_throw(const Exception_T *e, const char *func, const char *file, i
         } { \
                 if (Exception_flag == Exception_entered) \
                         Exception_flag = Exception_finalized;
-                
 
 /**
  * Ends a TRY-CATCH block

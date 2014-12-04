@@ -12,6 +12,7 @@ RM := rm -rf
 -include src/st/subdir.mk
 -include src/luaapi/subdir.mk
 -include src/db/redis/subdir.mk
+-include src/db/postgresql/subdir.mk
 -include src/db/subdir.mk
 -include src/subdir.mk
 -include libs/subdir.mk

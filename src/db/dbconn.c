@@ -130,7 +130,7 @@ dbconn_t dbconn_new(void *pool) {
 	//// st thread
 	C->nfd = st_netfd_open_socket((C->op)->getsocket(C->D));
 	/* Wait until the socket becomes writable */
-	if (st_netfd_poll(C->nfd, POLLOUT, -1) < 0) {
+	if (st_netfd_poll(C->nfd, POLLOUT, C->timeout) < 0) {
 		dbconn_free(&C);
 		return NULL;
 	}
@@ -243,6 +243,14 @@ void dbconn_beginTransaction(T C) {
 	if (!C->op->beginTransaction(C->D))
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 	C->isInTransaction++;
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
+	if (!C->resultSet)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
 }
 
 void dbconn_commit(T C) {
@@ -251,6 +259,14 @@ void dbconn_commit(T C) {
 		C->isInTransaction = 0;
 	// Even if we are not in a transaction, call the delegate anyway and propagate any errors
 	if (!C->op->commit(C->D))
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
+	if (!C->resultSet)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 }
 
@@ -264,6 +280,14 @@ void dbconn_rollback(T C) {
 	}
 	// Even if we are not in a transaction, call the delegate anyway and propagate any errors
 	if (!C->op->rollback(C->D))
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
+	if (!C->resultSet)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 }
 
@@ -329,6 +353,15 @@ dbpst_t dbconn_prepareStatement(T C, const char *sql, ...) {
 	va_start(ap, sql);
 	dbpst_t p = C->op->prepareStatement(C->D, sql, ap);
 	va_end(ap);
+
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
+	C->resultSet = C->op->getrs(C->D);
+
+	if (!C->resultSet)
+		THROW(sql_exception, "%s", dbconn_getLastError(C));
+
 	if (p)
 		vector_push(C->prepared, p);
 	else
