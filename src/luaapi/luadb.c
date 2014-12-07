@@ -5,6 +5,15 @@
  *      Author: blc
  */
 
+#include <exception/sql_exception.h>
+#include <mem.h>
+#include <logger.h>
+
+#include <db/dbpool.h>
+#include <db/dbconn.h>
+#include <db/dbrs.h>
+#include "luautils.h"
+
 #include <luaapi/luadb.h>
 
 #include <libpq-fe.h>
@@ -130,9 +139,134 @@ static int db_redis_command(lua_State* l) {
 }
 
 
+
+/////////////////////////////////////////////////////////////////////
+static int ldb_pool_new(lua_State* l) {
+	size_t len;
+	const char* url = luaL_checklstring(l, 1, &len);	//url string
+	int initconn = 0;
+	if (lua_gettop(l) > 1) {
+		initconn = luaL_checkinteger(l, 2);		// init conntion num in pool
+	}
+	uri_t uri = uri_new(url);
+	dbpool_t pool = dbpool_new(uri, initconn);
+
+	dbpool_start(pool);
+
+	lua_pushlightuserdata(l, pool);
+	return 1;
+}
+
+static int ldb_pool_free(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	dbpool_stop(pool);
+	dbpool_free(pool);
+	return 0;
+}
+
+static int ldb_pool_getConn(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	dbconn_t conn = dbpool_getConn(pool);
+	lua_pushlightuserdata(l, conn);
+	return 1;
+}
+
+static int ldb_pool_active(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int n = dbpool_active(pool);
+	lua_pushinteger(l, n);
+	return 1;
+}
+
+//////////////////////////////  db conntion ////////////////////
+static int ldb_conn_execute(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	size_t len;
+	const char* sql = luaL_checklstring(l, 2, &len);
+
+	TRY
+		dbconn_execute(conn, sql);
+	ELSE
+		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
+	END_TRY
+	return 0;
+}
+
+static int ldb_conn_executeQuery(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	size_t len;
+	const char* sql = luaL_checklstring(l, 2, &len);
+
+	dbrs_t rs = NULL;
+	TRY
+		rs = dbconn_executeQuery(conn, sql);
+	ELSE
+		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
+	END_TRY
+
+	lua_pushlightuserdata(l, rs);
+	return 1;
+}
+
+static int ldb_conn_close(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+
+	TRY
+		dbconn_close(conn);
+	ELSE
+		LOG_DEBUG("DB execute error: (%s)", dbconn_getLastError(conn));
+	END_TRY
+
+	return 0;
+}
+
+
+//////////////////////////////  db result ////////////////////
+static int ldb_rs_next(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int n = dbrs_next(rs);
+	lua_pushinteger(l, n);
+	return 1;
+}
+
+static int ldb_rs_getColumnCount(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int n = dbrs_getColumnCount(rs);
+	lua_pushinteger(l, n);
+	return 1;
+}
+
+static int ldb_rs_getColumnName(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	char* name = dbrs_getColumnName(rs, col);
+	lua_pushstring(l, name);
+	return 1;
+}
+
+static int ldb_rs_getString(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	char* v = dbrs_getString(rs, col);
+	lua_pushstring(l, v);
+	return 1;
+}
+
+
 static const luaL_Reg funs[] = {
-		{"connect", db_connect},
-		{"command", db_command},
+		{"newPool", ldb_pool_new},
+		{"freePool", ldb_pool_free},
+		{"getConntion", ldb_pool_getConn},
+		{"active", ldb_pool_active},
+
+		{"execute", ldb_conn_execute},
+		{"executeQuery", ldb_conn_executeQuery},
+		{"close", ldb_conn_close},
+
+		{"next", ldb_rs_next},
+		{"getColumnCount", ldb_rs_getColumnCount},
+		{"getColumnName", ldb_rs_getColumnName},
+		{"getString", ldb_rs_getString},
 		{NULL, NULL}
 };
 

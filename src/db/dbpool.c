@@ -52,7 +52,7 @@ static int fillPool(T P) {
 		dbconn_t con = dbconn_new(P);
 		if (!con) {
 			if (i > 0) {
-//				DEBUG("Failed to fill the pool with initial connections.\n");
+				LOG_DEBUG("Failed to fill the pool with initial connections.\n");
 				return 1;
 			}
 			return 0;

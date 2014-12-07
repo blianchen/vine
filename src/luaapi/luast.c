@@ -123,30 +123,3 @@ LUA_API int luaopen_stlib(lua_State* l) {
 	return 1;
 }
 
-
-////////////////////////////////////////////////////////////
-////  private  function
-////////////////////////////////////////////////////////////
-void dump_cstack(lua_State* l) {
-	int n = lua_gettop(l);
-	int i;
-	for (i=1; i<=n; i++) {
-		int t = lua_type(l, i);
-		switch (t) {
-		case LUA_TNUMBER:
-			printf("Call cstack index %i is number %g", i, lua_tonumber(l, i));
-			break;
-		case LUA_TSTRING:
-			printf("Call cstack index %i is string %s", i, lua_tostring(l, i));
-			break;
-		case LUA_TBOOLEAN:
-			printf("Call cstack index %i is boolean %s", i, lua_toboolean(l, i)?"true":"false");
-			break;
-		default:
-			printf("Call cstack index %i type is %s", i, lua_typename(l, t));
-			break;
-		}
-		printf("\n");
-	}
-}
-

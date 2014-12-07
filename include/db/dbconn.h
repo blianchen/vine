@@ -3,6 +3,7 @@
 
 #include <uri.h>
 #include <db/dbrs.h>
+#include <db/dbpst.h>
 
 #define T dbconn_t
 typedef struct dbconn_s *T;
@@ -164,6 +165,9 @@ void dbconn_rollback(T conn);
 // */
 //long long Connection_rowsChanged(T C);
 
+//void dbconn_vexecute(T C, const char *sql, va_list ap);
+void dbconn_execute(T conn, const char *sql);
+
 /**
  * Executes the given SQL statement, which may be an INSERT, UPDATE,
  * or DELETE statement or an SQL statement that returns nothing, such
@@ -176,7 +180,7 @@ void dbconn_rollback(T conn);
  * @exception SQLException If a database error occurs.
  * @see SQLException.h
  */
-void dbconn_execute(T conn, const char *sql, ...) __attribute__((format (printf, 2, 3)));
+//void dbconn_execute(T conn, const char *sql, ...) __attribute__((format (printf, 2, 3)));
 
 
 /**
@@ -198,8 +202,8 @@ void dbconn_execute(T conn, const char *sql, ...) __attribute__((format (printf,
  * @see ResultSet.h
  * @see SQLException.h
  */
-dbrs_t dbconn_executeQuery(T conn, const char *sql, ...) __attribute__((format (printf, 2, 3)));
-
+//dbrs_t dbconn_executeQuery(T conn, const char *sql, ...) __attribute__((format (printf, 2, 3)));
+dbrs_t dbconn_executeQuery(T conn, const char *sql);
 
 /**
  * Creates a PreparedStatement object for sending parameterized SQL
@@ -221,7 +225,7 @@ dbrs_t dbconn_executeQuery(T conn, const char *sql, ...) __attribute__((format (
  * @see SQLException.h
  */
 //PreparedStatement_T Connection_prepareStatement(T C, const char *sql, ...) __attribute__((format (printf, 2, 3)));
-
+dbpst_t Connection_prepareStatement(T C, const char *sql);
 
 /**
  * This method can be used to obtain a string describing the last

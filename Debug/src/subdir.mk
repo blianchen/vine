@@ -12,6 +12,7 @@ C_SRCS += \
 ../src/mem.c \
 ../src/sha1.c \
 ../src/str.c \
+../src/strbuffer.c \
 ../src/strconv.c \
 ../src/timeutil.c \
 ../src/uri.c \
@@ -27,6 +28,7 @@ OBJS += \
 ./src/mem.o \
 ./src/sha1.o \
 ./src/str.o \
+./src/strbuffer.o \
 ./src/strconv.o \
 ./src/timeutil.o \
 ./src/uri.o \
@@ -42,6 +44,7 @@ C_DEPS += \
 ./src/mem.d \
 ./src/sha1.d \
 ./src/str.d \
+./src/strbuffer.d \
 ./src/strconv.d \
 ./src/timeutil.d \
 ./src/uri.d \

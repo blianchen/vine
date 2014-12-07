@@ -56,14 +56,7 @@ end
 
 function dbtest1()
 print("---------db_connect start 111 " .. string.format("%d", st.mstime()));
-	local dbpool = db.newPool("postgresql://dbuser:dbuser@127.0.0.1:5432/test?application-name=corelib");
-local conn = db.getConntion(dbpool);
-local rs = db.executeQuery(conn, "select * from tb");
-while db.next(rs)==1 do
-	local colnum = db.getColumnCount(rs);
-	--print("---------db_query colnum=" .. colnum);
-	print("---------db_query colnum=" .. colnum .. ",colname=" .. db.getColumnName(rs, 2) .. ",value=" .. db.getString(rs, 2));
-end
+	local c = db.connect();
 print("---------db_connect end 111 " .. string.format("%d", st.mstime()));
 	print("-------------- get key " .. db.command(c));
 end
@@ -85,10 +78,10 @@ function luafun()
 --print("time11111===" .. string.format("%d", st.mstime()))
 	for i=1,1 do
 		--print("---------create_thread " .. i);
-		cos[i] = st.create_thread(dbtest1);
+		cos[i] = st.create_thread(servsock);
 	end
---cos[5] = st.create_thread(dbtest1);
---cos[6] = st.create_thread(dbtest2);
+cos[5] = st.create_thread(dbtest1);
+cos[6] = st.create_thread(dbtest2);
 --print("time22222===" .. string.format("%d", st.mstime()))
 
 

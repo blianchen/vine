@@ -19,7 +19,6 @@
 
 #include <db/dbconfig.h>
 #include <db/dbpool.h>
-#include <db/dbpst.h>
 #include "dbconn_delegate.h"
 #include <db/dbconn.h>
 
@@ -303,15 +302,36 @@ void dbconn_rollback(T C) {
 //        return C->op->rowsChanged(C->D);
 //}
 
-void dbconn_execute(T C, const char *sql, ...) {
+//void dbconn_vexecute(T C, const char *sql, va_list ap) {
+//	assert(C);
+//	assert(sql);
+//	if (C->resultSet)
+//		dbrs_free(&C->resultSet);
+////	va_list ap;
+////	va_start(ap, sql);
+//	int success = C->op->execute(C->D, sql, ap);
+////	va_end(ap);
+//	if (!success)
+//		THROW(sql_exception, "%s", dbconn_getLastError(C));
+//
+//	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
+//		THROW(sql_exception, "%s", dbconn_getLastError(C));
+//
+//	C->resultSet = C->op->getrs(C->D);
+//
+//	if (!C->resultSet)
+//		THROW(sql_exception, "%s", dbconn_getLastError(C));
+//}
+
+void dbconn_execute(T C, const char *sql) {
 	assert(C);
 	assert(sql);
 	if (C->resultSet)
 		dbrs_free(&C->resultSet);
-	va_list ap;
-	va_start(ap, sql);
-	int success = C->op->execute(C->D, sql, ap);
-	va_end(ap);
+//	va_list ap;
+//	va_start(ap, sql);
+	int success = C->op->execute(C->D, sql);
+//	va_end(ap);
 	if (!success)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
@@ -324,15 +344,15 @@ void dbconn_execute(T C, const char *sql, ...) {
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 }
 
-dbrs_t dbconn_executeQuery(T C, const char *sql, ...) {
+dbrs_t dbconn_executeQuery(T C, const char *sql) {
 	assert(C);
 	assert(sql);
 	if (C->resultSet)
 		dbrs_free(&C->resultSet);
-	va_list ap;
-	va_start(ap, sql);
-	int success = C->op->execute(C->D, sql, ap);
-	va_end(ap);
+//	va_list ap;
+//	va_start(ap, sql);
+	int success = C->op->execute(C->D, sql);
+//	va_end(ap);
 	if (!success)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
@@ -346,13 +366,13 @@ dbrs_t dbconn_executeQuery(T C, const char *sql, ...) {
 	return C->resultSet;
 }
 
-dbpst_t dbconn_prepareStatement(T C, const char *sql, ...) {
+dbpst_t dbconn_prepareStatement(T C, const char *sql) {
 	assert(C);
 	assert(sql);
-	va_list ap;
-	va_start(ap, sql);
-	dbpst_t p = C->op->prepareStatement(C->D, sql, ap);
-	va_end(ap);
+//	va_list ap;
+//	va_start(ap, sql);
+	dbpst_t p = C->op->prepareStatement(C->D, sql);
+//	va_end(ap);
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
 		THROW(sql_exception, "%s", dbconn_getLastError(C));

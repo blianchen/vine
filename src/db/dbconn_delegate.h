@@ -28,10 +28,12 @@ typedef struct cop_t {
 	int (*rollback)(T C);
 //	long long (*lastRowId)(T C);
 //	long long (*rowsChanged)(T C);
-	int (*execute)(T C, const char *sql, va_list ap);
+//	int (*execute)(T C, const char *sql, va_list ap);
+	int (*execute)(T C, const char *sql);
 //	dbrs_t (*executeQuery)(T C, const char *sql, va_list ap);
 	dbrs_t (*getrs)(T C);
-	dbpst_t (*prepareStatement)(T C, const char *sql, va_list ap);
+//	dbpst_t (*prepareStatement)(T C, const char *sql, va_list ap);
+	dbpst_t (*prepareStatement)(T C, const char *sql);
 	const char *(*getDbLastError)(T C);
 }*cop_t;
 

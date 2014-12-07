@@ -105,13 +105,12 @@ void dbpst_execute(T P) {
 	clearResultSet(P);
 	P->op->execute(P->D);
 
-	if (st_netfd_poll(P->nfd, POLLIN, P->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(P));
+	st_netfd_poll(P->nfd, POLLIN, P->timeout);
 
 	P->resultSet = P->op->getrs(P->D);
 
 	if (!P->resultSet)
-		THROW(sql_exception, "%s", dbconn_getLastError(P));
+		THROW(sql_exception, "PreparedStatement_executeQuery");
 }
 
 dbrs_t dbpst_executeQuery(T P) {
@@ -119,13 +118,12 @@ dbrs_t dbpst_executeQuery(T P) {
 	clearResultSet(P);
 	P->op->execute(P->D);
 
-	if (st_netfd_poll(P->nfd, POLLIN, P->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(P));
+	st_netfd_poll(P->nfd, POLLIN, P->timeout);
 
 	P->resultSet = P->op->getrs(P->D);
 
 	if (!P->resultSet)
-		THROW(sql_exception, "%s", dbconn_getLastError(P));
+		THROW(sql_exception, "PreparedStatement_executeQuery");
 	return P->resultSet;
 }
 

@@ -328,8 +328,7 @@ int dbpool_active(T P);
 /**
  * Prepare for the beginning of active use of this component. This method
  * must be called before the pool is used and will connect to the database
- * server and create the initial connections for the pool. This method will
- * also start the reaper thread if specified via dbpool_setReaper().
+ * server and create the initial connections for the pool.
  * @param P A ConnectionPool object
  * @exception SQLException If a database error occurs.
  * @see SQLException.h

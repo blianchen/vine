@@ -1,27 +1,3 @@
-/*
- * Copyright (C) Tildeslash Ltd. All rights reserved.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- *
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.
- */
-
 
 #ifndef STRINGBUFFER_INCLUDED
 #define STRINGBUFFER_INCLUDED
@@ -33,7 +9,7 @@
  */
 
 
-#define T StringBuffer_T
+#define T str_buffer_t
 typedef struct T *T;
 
 
@@ -44,7 +20,7 @@ typedef struct T *T;
  * @param s the initial contents of the buffer
  * @return A new StringBuffer object
  */
-T StringBuffer_new(const char *s);
+T strbuffer_new(const char *s);
 
 
 /**
@@ -54,14 +30,14 @@ T StringBuffer_new(const char *s);
  * @exception AssertException if hint is less than or equal to 0
  * @exception MemoryException if allocation failed
  */
-T StringBuffer_create(int hint);
+T strbuffer_create(int hint);
 
 
 /**
  * Destroy a StringBuffer object and free allocated resources
  * @param S a StringBuffer object reference
  */
-void StringBuffer_free(T *S);
+void strbuffer_free(T *S);
 
 
 /**
@@ -72,7 +48,7 @@ void StringBuffer_free(T *S);
  * @param s A string with optional var args
  * @return A reference to this StringBuffer
  */
-T StringBuffer_append(T S, const char *s, ...) __attribute__((format (printf, 2, 3)));
+T strbuffer_append(T S, const char *s, ...) __attribute__((format (printf, 2, 3)));
 
 
 /**
@@ -84,7 +60,7 @@ T StringBuffer_append(T S, const char *s, ...) __attribute__((format (printf, 2,
  * @param ap A variable argument list
  * @return A reference to this StringBuffer
  */
-T StringBuffer_vappend(T S, const char *s, va_list ap);
+T strbuffer_vappend(T S, const char *s, va_list ap);
 
 
 /**
@@ -95,7 +71,7 @@ T StringBuffer_vappend(T S, const char *s, va_list ap);
  * @return a reference to this StringBuffer
  * @exception MemoryException if allocation was used and failed
  */
-T StringBuffer_set(T S, const char *s, ...) __attribute__((format (printf, 2, 3)));
+T strbuffer_set(T S, const char *s, ...) __attribute__((format (printf, 2, 3)));
 
 
 /**
@@ -107,7 +83,7 @@ T StringBuffer_set(T S, const char *s, ...) __attribute__((format (printf, 2, 3)
  * @return a reference to this StringBuffer
  * @exception MemoryException if allocation was used and failed
  */
-T StringBuffer_vset(T S, const char *s, va_list ap);
+T strbuffer_vset(T S, const char *s, va_list ap);
 
 
 /**
@@ -116,7 +92,7 @@ T StringBuffer_vset(T S, const char *s, va_list ap);
  * @return The length of the sequence of characters currently represented 
  * by this string buffer
  */
-int StringBuffer_length(T S);
+int strbuffer_length(T S);
 
 
 /**
@@ -124,7 +100,7 @@ int StringBuffer_length(T S);
  * @param S StringBuffer object
  * @return a reference to this StringBuffer
  */
-T StringBuffer_clear(T S);
+T strbuffer_clear(T S);
 
 
 /**
@@ -132,47 +108,47 @@ T StringBuffer_clear(T S);
  * @param S StringBuffer object
  * @return A string representation of the string buffer 
  */
-const char *StringBuffer_toString(T S);
+const char *strbuffer_toString(T S);
 
 
 /**
  * Replace all occurences of <code>?</code> in this string buffer with <code>$n</code>.
  * Example: 
  * <pre>
- * StringBuffer_T b = StringBuffer_new("insert into host values(?, ?, ?);"); 
- * StringBuffer_prepare4postgres(b) -> "insert into host values($1, $2, $3);"
+ * strbuffer_T b = strbuffer_new("insert into host values(?, ?, ?);");
+ * strbuffer_prepare4postgres(b) -> "insert into host values($1, $2, $3);"
  * </pre>
  * @param S StringBuffer object
  * @return The number of replacements that took place
  * @exception SQLException If there are more than 99 wild card '?' parameters
  */
-int StringBuffer_prepare4postgres(T S);
+int strbuffer_prepare4postgres(T S);
 
 
 /**
  * Replace all occurences of <code>?</code> in this string buffer with <code>:n</code>.
  * Example: 
  * <pre>
- * StringBuffer_T b = StringBuffer_new("insert into host values(?, ?, ?);"); 
- * StringBuffer_prepare4oracle(b) -> "insert into host values(:1, :2, :3);"
+ * strbuffer_T b = strbuffer_new("insert into host values(?, ?, ?);");
+ * strbuffer_prepare4oracle(b) -> "insert into host values(:1, :2, :3);"
  * </pre>
  * @param S StringBuffer object
  * @return The number of replacements that took place
  * @exception SQLException If there are more than 99 wild card '?' parameters
  */
-int StringBuffer_prepare4oracle(T S);
+int strbuffer_prepare4oracle(T S);
 
 
 /**
  * Remove (any) leading and trailing white space and semicolon [ \\t\\r\\n;]. Example
  * <pre>
- * StringBuffer_T b = StringBuffer_new("\t select a from b; \n"); 
- * StringBuffer_trim(b) -> "select a from b"
+ * strbuffer_T b = strbuffer_new("\t select a from b; \n");
+ * strbuffer_trim(b) -> "select a from b"
  * </pre>
  * @param S StringBuffer object
  * @return a reference to this StringBuffer
  */
-T StringBuffer_trim(T S);
+T strbuffer_trim(T S);
 
 
 #undef T

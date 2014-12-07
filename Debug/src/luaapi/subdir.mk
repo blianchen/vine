@@ -6,17 +6,20 @@
 C_SRCS += \
 ../src/luaapi/luadb.c \
 ../src/luaapi/luanet.c \
-../src/luaapi/luast.c 
+../src/luaapi/luast.c \
+../src/luaapi/luautils.c 
 
 OBJS += \
 ./src/luaapi/luadb.o \
 ./src/luaapi/luanet.o \
-./src/luaapi/luast.o 
+./src/luaapi/luast.o \
+./src/luaapi/luautils.o 
 
 C_DEPS += \
 ./src/luaapi/luadb.d \
 ./src/luaapi/luanet.d \
-./src/luaapi/luast.d 
+./src/luaapi/luast.d \
+./src/luaapi/luautils.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

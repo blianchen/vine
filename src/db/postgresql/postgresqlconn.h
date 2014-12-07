@@ -15,9 +15,10 @@ int postgresqlconn_commit(T C);
 int postgresqlconn_rollback(T C);
 long long postgresqlconn_lastRowId(T C);
 long long postgresqlconn_rowsChanged(T C);
-int postgresqlconn_execute(T C, const char *sql, va_list ap);
+//int postgresqlconn_execute(T C, const char *sql, va_list ap);
+int postgresqlconn_execute(T C, const char *sql);
 //dbrs_t postgresqlconn_executeQuery(T C, const char *sql, va_list ap);
-dbpst_t postgresqlconn_prepareStatement(T C, const char *sql, va_list ap);
+dbpst_t postgresqlconn_prepareStatement(T C, const char *sql);
 const char *postgresqlconn_getLastError(T C);
 dbrs_t postgresqlconn_getrs(T C);
 /* Event handlers */

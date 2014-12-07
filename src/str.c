@@ -11,6 +11,9 @@
 #include <exception/sys_exception.h>
 
 
+#define INIT_STR_LEN 256
+
+
 #ifdef PACKAGE_PROTECTED
 #pragma GCC visibility push(hidden)
 #endif
@@ -101,7 +104,7 @@ char *str_vcat(const char *s, va_list ap) {
 	if (s) {
 		int n = 0;
 		va_list ap_copy;
-		int size = 128;
+		int size = INIT_STR_LEN;
 		buf = MALLOC(size);
 		while (1) {
 			va_copy(ap_copy, ap);
@@ -109,7 +112,7 @@ char *str_vcat(const char *s, va_list ap) {
 			va_end(ap_copy);
 			if (n < size)
 				break;
-			size = n + 64;
+			size = n + 1;
 			REALLOC(buf, size);
 		}
 	}

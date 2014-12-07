@@ -47,23 +47,22 @@ typedef struct param_t {
 } *param_t;
 #define T dbpst_delegate_t
 struct T {
-        int maxRows;
-        int lastError;
-        char *stmt;
-        PGconn *db;
-        PGresult *res;
-        int paramCount;
-        char **paramValues; 
-        int *paramLengths; 
-        int *paramFormats;
-        param_t params;
+	int maxRows;
+//        int lastError;
+	char *stmt;
+	PGconn *db;
+	PGresult *res;
+	int paramCount;
+	char **paramValues;
+	int *paramLengths;
+	int *paramFormats;
+	param_t params;
 };
 
 extern const struct Rop_T postgresqlrops;
 
 
 /* ----------------------------------------------------- Protected methods */
-
 
 #ifdef PACKAGE_PROTECTED
 #pragma GCC visibility push(hidden)
@@ -78,7 +77,7 @@ T postgresqlpst_new(PGconn *db, int maxRows, char *stmt, int paramCount) {
 	P->stmt = stmt;
 	P->maxRows = maxRows;
 	P->paramCount = paramCount;
-	P->lastError = PGRES_COMMAND_OK;
+//	P->lastError = PGRES_COMMAND_OK;
 	if (P->paramCount) {
 		P->paramValues = CALLOC(P->paramCount, sizeof(char *));
 		P->paramLengths = CALLOC(P->paramCount, sizeof(int));
@@ -175,7 +174,7 @@ dbrs_t postgresqlpst_getrs(T P) {
 		return NULL;
 	}
 	ExecStatusType re = PQresultStatus(P->res);
-	P->lastError = re;
+//	P->lastError = re;
 	if (re == PGRES_EMPTY_QUERY || re == PGRES_COMMAND_OK || re == PGRES_TUPLES_OK) {
 		return dbrs_new(postgresqlrs_new(P->res, P->maxRows), (rop_t) &postgresqlrops);
 	} else {

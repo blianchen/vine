@@ -26,8 +26,8 @@ const struct rop_t redisrops = {
 	.isnull = redisrs_isnull,
 	.getString = redisrs_getString,
 	.getBlob = redisrs_getBlob,
-	NULL, // getTimestamp is handled in ResultSet
-	NULL  // getDateTime is handled in ResultSet
+	.getTimestamp = NULL, // getTimestamp is handled in ResultSet
+	.getDateTime = NULL  // getDateTime is handled in ResultSet
 };
 
 #define T dbresultset_delegate_t
@@ -48,7 +48,7 @@ T redisrs_new(redisReply *res) {
 	assert(res);
 	NEW(R);
 	R->res = res;
-//        R->maxRows = maxRows;
+//	R->maxRows = maxRows;
 	R->currentRow = -1;
 	R->columnCount = 1;		//redis always 1
 	if ((R->res)->type == REDIS_REPLY_ARRAY) {

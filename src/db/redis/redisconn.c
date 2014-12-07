@@ -179,12 +179,12 @@ int redisconn_beginTransaction(T C) {
 
 int redisconn_commit(T C) {
 	assert(C);
-	return redisconn_execute(C, "EXEC", NULL);
+	return redisconn_execute(C, "EXEC");
 }
 
 int redisconn_rollback(T C) {
 	assert(C);
-	return redisconn_execute(C, "DISCARD", NULL);
+	return redisconn_execute(C, "DISCARD");
 }
 
 
@@ -206,7 +206,7 @@ dbrs_t redisconn_getrs(T C) {
 	do {
 		if (redisBufferRead(C->db) == REDIS_ERR)
 			return NULL;
-		if (redisGetReplyFromReader(C->db, &(C->res)) == REDIS_ERR)
+		if (redisGetReplyFromReader(C->db, (void **)&(C->res)) == REDIS_ERR)
 			return NULL;
 	} while (C->res == NULL);
 	if ((C->res)->type != REDIS_REPLY_ERROR) {
@@ -216,17 +216,17 @@ dbrs_t redisconn_getrs(T C) {
 	return dbrs;
 }
 
-int redisconn_execute(T C, const char *sql, va_list ap) {
+int redisconn_execute(T C, const char *sql) {
 	assert(C);
 	if (C->res) {
 		freeReplyObject(C->res);
 		C->res = NULL;
 	}
-	if (ap) {
-		redisvAppendCommand(C->db, sql, ap);
-	} else {
+//	if (ap) {
+//		redisvAppendCommand(C->db, sql, ap);
+//	} else {
 		redisAppendCommand(C->db, sql);
-	}
+//	}
 
 	int wdone = 0;
 	/* Write until done */
@@ -254,7 +254,7 @@ int redisconn_execute(T C, const char *sql, va_list ap) {
 //	return NULL;
 //}
 
-dbpst_t redisconn_prepareStatement(T C, const char *sql, va_list ap) {
+dbpst_t redisconn_prepareStatement(T C, const char *sql) {
 	LOG_WARN("redis not support prepareStatement");
 	return NULL;
 }

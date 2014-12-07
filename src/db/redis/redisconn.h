@@ -21,10 +21,10 @@ int redisconn_commit(T C);
 int redisconn_rollback(T C);
 //long long redisconn_lastRowId(T C);
 //long long redisconn_rowsChanged(T C);
-int redisconn_execute(T C, const char *sql, va_list ap);
+int redisconn_execute(T C, const char *sql);
 dbrs_t redisconn_getrs(T C);
 //dbrs_t redisconn_executeQuery(T C, const char *sql, va_list ap);
-dbpst_t redisconn_prepareStatement(T C, const char *sql, va_list ap);
+dbpst_t redisconn_prepareStatement(T C, const char *sql);
 const char *redisconn_getLastError(T C);
 /* Event handlers */
 void  redisconn_onconn(T C);
