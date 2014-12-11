@@ -14,6 +14,7 @@
 #include <timeutil.h>
 #include <str.h>
 #include <logger.h>
+#include <utils.h>
 
 #include <st/st.h>
 
@@ -95,8 +96,8 @@ static int setDelegate(T C) {
 
 static void freePrepared(T C) {
 	while (! vector_isEmpty(C->prepared)) {
-//		PreparedStatement_T ps = Vector_pop(C->prepared);
-//		PreparedStatement_free(&ps);
+		dbpst_t ps = vector_pop(C->prepared);
+		dbpst_free(&ps);
 	}
 }
 
@@ -127,9 +128,25 @@ dbconn_t dbconn_new(void *pool) {
 	}
 
 	//// st thread
-	C->nfd = st_netfd_open_socket((C->op)->getsocket(C->D));
+	int osfd = (C->op)->getsocket(C->D);
+	C->nfd = st_netfd_open_socket(osfd);
 	/* Wait until the socket becomes writable */
 	if (st_netfd_poll(C->nfd, POLLOUT, C->timeout) < 0) {
+		LOG_DEBUG("sql connect timeout.");
+		dbconn_free(&C);
+		return NULL;
+	}
+
+	int err = 0;
+	int n = sizeof(int);
+	if (getsockopt(osfd, SOL_SOCKET, SO_ERROR, (char *) &err, (socklen_t *) &n) < 0) {
+		LOG_DEBUG("getsockopt error: errno=%d, errstr=%s.", getLastError(), getLastErrorText());
+		dbconn_free(&C);
+		return NULL;
+	}
+	if (err) {
+		errno = err;
+		LOG_DEBUG("connect to db error: errno=%d, errstr=%s.", err, getLastErrorText());
 		dbconn_free(&C);
 		return NULL;
 	}
@@ -244,7 +261,7 @@ void dbconn_beginTransaction(T C) {
 	C->isInTransaction++;
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+		THROW(sql_exception, "sql beginTransaction timeout.");
 
 	C->resultSet = C->op->getrs(C->D);
 
@@ -261,7 +278,7 @@ void dbconn_commit(T C) {
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+		THROW(sql_exception, "sql commit timeout.");
 
 	C->resultSet = C->op->getrs(C->D);
 
@@ -282,7 +299,7 @@ void dbconn_rollback(T C) {
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+		THROW(sql_exception, "sql rollback timeout.");
 
 	C->resultSet = C->op->getrs(C->D);
 
@@ -336,7 +353,7 @@ void dbconn_execute(T C, const char *sql) {
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+		THROW(sql_exception, "sql execute timeout.");
 
 	C->resultSet = C->op->getrs(C->D);
 
@@ -357,7 +374,7 @@ dbrs_t dbconn_executeQuery(T C, const char *sql) {
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 
 	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+		THROW(sql_exception, "sql executeQuery timeout.");
 
 	C->resultSet = C->op->getrs(C->D);
 
@@ -374,16 +391,22 @@ dbpst_t dbconn_prepareStatement(T C, const char *sql) {
 	dbpst_t p = C->op->prepareStatement(C->D, sql);
 //	va_end(ap);
 
-	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0)
-		THROW(sql_exception, "%s", dbconn_getLastError(C));
+	if (st_netfd_poll(C->nfd, POLLIN, C->timeout) < 0) {
+		dbpst_free(&p);
+		THROW(sql_exception, "sql prepareStatement timeout.");
+	}
 
 	C->resultSet = C->op->getrs(C->D);
 
-	if (!C->resultSet)
+	if (!C->resultSet) {
+		dbpst_free(&p);
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
+	}
 
-	if (p)
+	if (p) {
 		vector_push(C->prepared, p);
+		dbpst_setQueryTimeout(p, C->timeout);
+	}
 	else
 		THROW(sql_exception, "%s", dbconn_getLastError(C));
 	return p;

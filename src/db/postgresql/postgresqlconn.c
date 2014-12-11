@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <libpq-fe.h>
 
-#include <exception/sql_exception.h>
 #include <uri.h>
 #include <mem.h>
 #include <str.h>
@@ -57,7 +56,7 @@ struct T {
 	PGresult *res;
 	int maxRows;
 //	int timeout;
-	ExecStatusType lastError;
+//	ExecStatusType lastError;
 	str_buffer_t sb;
 };
 
@@ -77,15 +76,19 @@ static int doConnect(T C) {
 		user = uri_getUser(C->url);
 	else if (uri_getParameter(C->url, "user"))
 		user = uri_getParameter(C->url, "user");
-	else
-		THROW(sql_exception, "no username specified in URL");
+	else {
+		LOG_DEBUG("no username specified in URL: %s", uri_toString(C->url));
+		return 0;
+	}
 	/* Password */
 	if (uri_getPassword(C->url))
 		password = uri_getPassword(C->url);
 	else if (uri_getParameter(C->url, "password"))
 		password = uri_getParameter(C->url, "password");
-	else
-		THROW(sql_exception, "no password specified in URL");
+	else {
+		LOG_DEBUG("no password specified in URL: %s", uri_toString(C->url));
+		return 0;
+	}
 	/* Host */
 	if (uri_getParameter(C->url, "unix-socket")) {
 		if (uri_getParameter(C->url, "unix-socket")[0] != '/')
@@ -98,13 +101,17 @@ static int doConnect(T C) {
 			port = uri_getPort(C->url);
 		else
 			THROW(sql_exception, "no port specified in URL");
-	} else
-		THROW(sql_exception, "no host specified in URL");
+	} else {
+		LOG_DEBUG("no host specified in URL: %s", uri_toString(C->url));
+		return 0;
+	}
 	/* Database name */
 	if (uri_getPath(C->url))
 		dbname = uri_getPath(C->url) + 1;
-	else
-		THROW(sql_exception, "no database specified in URL");
+	else {
+		LOG_DEBUG("no database specified in URL: %s", uri_toString(C->url));
+		return 0;
+	}
 
 	strbuffer_append(C->sb, "user='%s' password='%s' host='%s' port=%d dbname='%s' ", user, password, host, port, dbname);
 
@@ -112,21 +119,17 @@ static int doConnect(T C) {
 	strbuffer_append(C->sb, "sslmode='%s' ", str_isEqual(uri_getParameter(C->url, "use-ssl"), "true") ? "require" : "disable");
 	if (uri_getParameter(C->url, "connect-timeout")) {
 		TRY
-			strbuffer_append(C->sb, "connect_timeout=%d ",
-			str_parseInt(uri_getParameter(C->url, "connect-timeout")));
+			strbuffer_append(C->sb, "connect_timeout=%d ", str_parseInt(uri_getParameter(C->url, "connect-timeout")));
 		ELSE
-			THROW(sql_exception, "invalid connect timeout value");
+			LOG_DEBUG("invalid connect timeout value in URL: %s", uri_toString(C->url));
 		END_TRY;
 	} else
 		strbuffer_append(C->sb, "connect_timeout=%d ", SQL_DEFAULT_TCP_TIMEOUT);
 	if (uri_getParameter(C->url, "application-name"))
 		strbuffer_append(C->sb, "application_name='%s' ", uri_getParameter(C->url, "application-name"));
 	/* Connect */
-//	C->db = PQconnectdb(strbuffer_toString(C->sb));
 	C->db = PQconnectStart(strbuffer_toString(C->sb));
 
-//	if (PQstatus(C->db) == CONNECTION_OK)
-//		return 1;
 	return C->db != NULL;
 }
 
@@ -175,14 +178,6 @@ int postgresqlconn_getsocket(T C) {
 	return PQsocket(C->db);
 }
 
-//void postgresqlconn_setQueryTimeout(T C, int ms) {
-//	assert(C);
-//	C->timeout = ms;
-//	strbuffer_set(C->sb, "SET statement_timeout TO %d;", C->timeout);
-//	PGresult *res = PQexec(C->db, strbuffer_toString(C->sb));
-//	PQclear(res);
-//}
-//
 //void postgresqlconn_setMaxRows(T C, int max) {
 //	assert(C);
 //	C->maxRows = max;
@@ -226,22 +221,13 @@ dbrs_t postgresqlconn_getrs(T C) {
 		return NULL;
 	}
 	ExecStatusType re = PQresultStatus(C->res);
-	C->lastError = re;
+//	C->lastError = re;
 	if (re == PGRES_EMPTY_QUERY || re == PGRES_COMMAND_OK || re == PGRES_TUPLES_OK) {
 		return dbrs_new(postgresqlrs_new(C->res, C->maxRows), (rop_t)&postgresqlrops);
 	} else {
 		return NULL;
 	}
 }
-
-//int postgresqlconn_execute(T C, const char *sql, va_list ap) {
-//	va_list ap_copy;
-//	assert(C);
-//	va_copy(ap_copy, ap);
-//	strbuffer_vset(C->sb, sql, ap_copy);
-//	va_end(ap_copy);
-//	return PQsendQuery(C->db, strbuffer_toString(C->sb));
-//}
 
 int postgresqlconn_execute(T C, const char *sql) {
 //	va_list ap_copy;

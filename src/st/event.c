@@ -40,6 +40,8 @@
 #include <errno.h>
 #include "common.h"
 
+#define MD_HAVE_EPOLL 1
+
 #ifdef MD_HAVE_KQUEUE
 #include <sys/event.h>
 #endif
@@ -1268,13 +1270,23 @@ ST_HIDDEN void _st_epoll_dispatch(void)
     nfd = epoll_wait(_st_epoll_data->epfd, _st_epoll_data->evtlist,
                      _st_epoll_data->evtlist_size, timeout);
 
+    strerror(errno);
+
+
     if (nfd > 0) {
         for (i = 0; i < nfd; i++) {
             osfd = _st_epoll_data->evtlist[i].data.fd;
+
             _ST_EPOLL_REVENTS(osfd) = _st_epoll_data->evtlist[i].events;
             if (_ST_EPOLL_REVENTS(osfd) & (EPOLLERR | EPOLLHUP)) {
                 /* Also set I/O bits on error */
                 _ST_EPOLL_REVENTS(osfd) |= _ST_EPOLL_EVENTS(osfd);
+
+                ////////////////////////////////////////////////////////////
+//                			int optval;
+//                               int optlen = sizeof(int);
+//                            getsockopt(osfd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+//                            printf("----%s----\n", strerror(optval));
             }
         }
 

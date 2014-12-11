@@ -4,6 +4,7 @@
  *  Created on: Nov 21, 2014
  *      Author: blc
  */
+#include <stdint.h>
 
 #include <exception/sql_exception.h>
 #include <mem.h>
@@ -20,147 +21,72 @@
 
 //SELECT pg_stat_get_backend_pid(s.backendid) AS procpid, pg_stat_get_backend_activity(s.backendid) AS current_query FROM (SELECT pg_stat_get_backend_idset() AS backendid) AS s;
 
-static int db_connect(lua_State* l) {
-	PGconn* conn = PQconnectStart("hostaddr=127.0.0.1 port=5432 dbname=test user=dbuser password=dbuser application_name=corelib");
-	int fd = PQsocket(conn);
-
-	st_netfd_t nfd = st_netfd_open_socket(fd);
-	st_netfd_setspecific(nfd, conn, NULL);
-
-	/* Wait until the socket becomes writable */
-	if (st_netfd_poll(nfd, POLLOUT, -1) < 0)
-		return 0;
-
-	PostgresPollingStatusType status = 0;
-	while (1) {
-		status = PQconnectPoll(conn);
-		switch (status) {
-		case PGRES_POLLING_WRITING:
-		case PGRES_POLLING_READING:
-			continue;
-		case PGRES_POLLING_FAILED:
-			lua_pushinteger(l, -1);
-			PQfinish(conn);
-			return 1;
-		case PGRES_POLLING_OK:
-			lua_pushlightuserdata(l, nfd);
-			return 1;
-		default:
-			lua_pushinteger(l, -1);
-			return 1;
-		}
-	}
+//////////////////////////////// common /////////////////////
+static int ldb_version(lua_State* l) {
+	const char* v = dbpool_version();
+	lua_pushstring(l, v);
 	return 1;
 }
 
-static int db_command(lua_State* l) {
-	st_netfd_t nfd = lua_touserdata(l, 1);
-	PGconn* conn = st_netfd_getspecific(nfd);
-
-	int r = PQsendQuery(conn, "select * from tb");
-	if (r == 0) {
-		lua_pushinteger(l, -1);
-		return 1;
-	}
-
-	/* Wait until the socket becomes readable */
-	if (st_netfd_poll(nfd, POLLIN, -1) < 0) {
-		lua_pushinteger(l, -1);
-		return 1;
-	}
-
-//	do {
-//		r = PQconsumeInput(conn);
-//	} while (r == 0);
-//
-//	do {
-//		r = PQisBusy(conn);
-//	} while (r == 1);
-
-	PGresult* res = PQgetResult(conn);
-
-	ExecStatusType rst = PQresultStatus(res);
-	if (rst == PGRES_BAD_RESPONSE || rst == PGRES_NONFATAL_ERROR || rst == PGRES_FATAL_ERROR) {
-		lua_pushinteger(l, -1);
-		return 1;
-	}
-//	int n = PQntuples(res);
-	char* s = PQgetvalue(res, 1, 1);
-
-	lua_pushstring(l, s);
-	return 1;
-}
-
-static int db_redis_connect(lua_State* l) {
-	redisContext* redc = redisConnectNonBlock("127.0.0.1", 6379);
-
-	st_netfd_t nfd = st_netfd_open_socket(redc->fd);
-	st_netfd_setspecific(nfd, redc, NULL);
-
-	/* Wait until the socket becomes writable */
-	if (st_netfd_poll(nfd, POLLOUT, -1) < 0)
-		return 0;
-
-	if (redc->err != 0) {
-		redisFree(redc);
-		lua_pushinteger(l, -1);
+static int ldb_isSupported(lua_State* l) {
+	size_t len;
+	const char* url = luaL_checklstring(l, 1, &len);
+	if (dbconn_isSupported(url)) {
+		lua_pushinteger(l, 1);
 	} else {
-		lua_pushlightuserdata(l, nfd);
+		lua_pushinteger(l, 0);
 	}
 	return 1;
 }
 
-static int db_redis_command(lua_State* l) {
-	st_netfd_t nfd = lua_touserdata(l, 1);
-	redisContext* c = st_netfd_getspecific(nfd);
 
-	int wdone = 0;
-	redisReply *r = NULL;
-
-	redisAppendCommand(c, "get key");
-
-	/* Write */
-	if (redisBufferWrite(c, &wdone) == REDIS_ERR)
-		return REDIS_ERR;
-
-	if (st_netfd_poll(nfd, POLLIN, -1) < 0)
-		return 0;
-
-	/* Read until there is a reply */
-	do {
-		if (redisBufferRead(c) == REDIS_ERR)
-			return REDIS_ERR;
-		if (redisGetReplyFromReader(c, &r) == REDIS_ERR)
-			return REDIS_ERR;
-	} while (r == NULL);
-
-	lua_pushstring(l, r->str);
-	return 1;
-}
-
-
-
-/////////////////////////////////////////////////////////////////////
+///////////////////////////// conntion poll ///////////////////////////////
 static int ldb_pool_new(lua_State* l) {
 	size_t len;
 	const char* url = luaL_checklstring(l, 1, &len);	//url string
-	int initconn = 0;
-	if (lua_gettop(l) > 1) {
-		initconn = luaL_checkinteger(l, 2);		// init conntion num in pool
-	}
 	uri_t uri = uri_new(url);
-	dbpool_t pool = dbpool_new(uri, initconn);
-
-	dbpool_start(pool);
+	dbpool_t pool = dbpool_new(uri);
 
 	lua_pushlightuserdata(l, pool);
 	return 1;
 }
 
-static int ldb_pool_free(lua_State* l) {
+static int ldb_pool_setInitialConn(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int num = luaL_checkinteger(l, 2);
+	dbpool_setInitialConn(pool, num);
+	return 0;
+}
+
+static int ldb_pool_setMaxConn(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int num = luaL_checkinteger(l, 2);
+	dbpool_setMaxConn(pool, num);
+	return 0;
+}
+
+static int ldb_pool_setSqlTimeout(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int num = luaL_checkinteger(l, 2);
+	dbpool_setSqlTimeout(pool, num);
+	return 0;
+}
+
+static int ldb_pool_start(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	dbpool_start(pool);
+	return 0;
+}
+
+static int ldb_pool_stop(lua_State* l) {
 	dbpool_t pool = lua_touserdata(l, 1);
 	dbpool_stop(pool);
-	dbpool_free(pool);
+	return 0;
+}
+
+static int ldb_pool_free(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	dbpool_free(&pool);
 	return 0;
 }
 
@@ -178,17 +104,18 @@ static int ldb_pool_active(lua_State* l) {
 	return 1;
 }
 
-//////////////////////////////  db conntion ////////////////////
+
+//////////////////////////////  db conntion //////////////////////
 static int ldb_conn_execute(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
 	size_t len;
 	const char* sql = luaL_checklstring(l, 2, &len);
 
-	TRY
+//	TRY
 		dbconn_execute(conn, sql);
-	ELSE
-		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
-	END_TRY
+//	ELSE
+//		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
+//	END_TRY
 	return 0;
 }
 
@@ -198,11 +125,11 @@ static int ldb_conn_executeQuery(lua_State* l) {
 	const char* sql = luaL_checklstring(l, 2, &len);
 
 	dbrs_t rs = NULL;
-	TRY
+//	TRY
 		rs = dbconn_executeQuery(conn, sql);
-	ELSE
-		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
-	END_TRY
+//	ELSE
+//		LOG_DEBUG("DB execute error: %s.(%s)", sql, dbconn_getLastError(conn));
+//	END_TRY
 
 	lua_pushlightuserdata(l, rs);
 	return 1;
@@ -211,13 +138,91 @@ static int ldb_conn_executeQuery(lua_State* l) {
 static int ldb_conn_close(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
 
-	TRY
+//	TRY
 		dbconn_close(conn);
-	ELSE
-		LOG_DEBUG("DB execute error: (%s)", dbconn_getLastError(conn));
-	END_TRY
+//	ELSE
+//		LOG_DEBUG("DB execute error: (%s)", dbconn_getLastError(conn));
+//	END_TRY
 
 	return 0;
+}
+
+static int ldb_conn_beginTransaction(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	dbconn_beginTransaction(conn);
+	return 0;
+}
+
+static int ldb_conn_commit(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	dbconn_commit(conn);
+	return 0;
+}
+
+static int ldb_conn_rollback(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	dbconn_rollback(conn);
+	return 0;
+}
+
+static int ldb_conn_prepareStatement(lua_State* l) {
+	dbconn_t conn = lua_touserdata(l, 1);
+	size_t len;
+	const char* sql = luaL_checklstring(l, 2, &len);
+	dbpst_t pst = dbconn_prepareStatement(conn, sql);
+	lua_pushlightuserdata(l, pst);
+	return 1;
+}
+
+
+///////////////////////////// db prepareStatement  ////////////////
+static int ldb_pst_setString(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+	int paramId = luaL_checkinteger(l, 2);
+	size_t len;
+	const char* s = luaL_checklstring(l, 3, &len);
+	dbpst_setString(pst, paramId, s);
+	return 0;
+}
+
+static int ldb_pst_setInt(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+	int paramId = luaL_checkinteger(l, 2);
+	int n = luaL_checkinteger(l, 3);
+	dbpst_setInt(pst, paramId, n);
+	return 0;
+}
+
+static int ldb_pst_setLLong(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+	int paramId = luaL_checkinteger(l, 2);
+	long long n = luaL_checknumber(l, 3);
+	dbpst_setLLong(pst, paramId, n);
+	return 0;
+}
+
+static int ldb_pst_setDouble(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+	int paramId = luaL_checkinteger(l, 2);
+	double n = luaL_checknumber(l, 3);
+	dbpst_setDouble(pst, paramId, n);
+	return 0;
+}
+
+static int ldb_pst_execute(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+	dbpst_execute(pst);
+	return 0;
+}
+
+static int ldb_pst_executeQuery(lua_State* l) {
+	dbpst_t pst = lua_touserdata(l, 1);
+
+	dbrs_t rs = NULL;
+	rs = dbpst_executeQuery(pst);
+
+	lua_pushlightuserdata(l, rs);
+	return 1;
 }
 
 
@@ -239,34 +244,147 @@ static int ldb_rs_getColumnCount(lua_State* l) {
 static int ldb_rs_getColumnName(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
 	int col = luaL_checkinteger(l, 2);
-	char* name = dbrs_getColumnName(rs, col);
+	const char* name = dbrs_getColumnName(rs, col);
 	lua_pushstring(l, name);
 	return 1;
 }
 
+static int ldb_rs_getColumnSize(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	int n = dbrs_getColumnSize(rs, col);
+	lua_pushinteger(l, n);
+	return 1;
+}
+
+static int ldb_rs_isnull(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	if (dbrs_isnull(rs, col)) {
+		lua_pushboolean(l, 1);
+	} else {
+		lua_pushboolean(l, 0);
+	}
+	return 1;
+}
+
+///////////// get  ///
 static int ldb_rs_getString(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
 	int col = luaL_checkinteger(l, 2);
-	char* v = dbrs_getString(rs, col);
+	const char* v = dbrs_getString(rs, col);
 	lua_pushstring(l, v);
+	return 1;
+}
+
+static int ldb_rs_getStringByName(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	size_t len;
+	const char* name = luaL_checklstring(l, 2, &len);
+	const char* v = dbrs_getStringByName(rs, name);
+	lua_pushstring(l, v);
+	return 1;
+}
+
+static int ldb_rs_getInt(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	int v = dbrs_getInt(rs, col);
+	lua_pushinteger(l, v);
+	return 1;
+}
+
+static int ldb_rs_getIntByName(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	size_t len;
+	const char* name = luaL_checklstring(l, 2, &len);
+	int v = dbrs_getIntByName(rs, name);
+	lua_pushinteger(l, v);
+	return 1;
+}
+
+static int ldb_rs_getLLong(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	int64_t v = dbrs_getLLong(rs, col);
+	lua_pushnumber(l, v);
+	return 1;
+}
+
+static int ldb_rs_getLLongByName(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	size_t len;
+	const char* name = luaL_checklstring(l, 2, &len);
+	int64_t v = dbrs_getLLongByName(rs, name);
+	lua_pushnumber(l, v);
+	return 1;
+}
+
+static int ldb_rs_getDouble(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	int col = luaL_checkinteger(l, 2);
+	double v = dbrs_getDouble(rs, col);
+	lua_pushnumber(l, v);
+	return 1;
+}
+
+static int ldb_rs_getDoubleByName(lua_State* l) {
+	dbrs_t rs = lua_touserdata(l, 1);
+	size_t len;
+	const char* name = luaL_checklstring(l, 2, &len);
+	double v = dbrs_getDoubleByName(rs, name);
+	lua_pushnumber(l, v);
 	return 1;
 }
 
 
 static const luaL_Reg funs[] = {
+		{"version", ldb_version},
+		{"isSupported", ldb_isSupported},
+
+		// pool
 		{"newPool", ldb_pool_new},
+		{"setInitialConn", ldb_pool_setInitialConn},
+		{"setMaxConn", ldb_pool_setMaxConn},
+		{"setSqlTimeout", ldb_pool_setSqlTimeout},
+		{"start", ldb_pool_start},
+		{"stop", ldb_pool_stop},
 		{"freePool", ldb_pool_free},
 		{"getConntion", ldb_pool_getConn},
 		{"active", ldb_pool_active},
 
+		// connection
 		{"execute", ldb_conn_execute},
 		{"executeQuery", ldb_conn_executeQuery},
 		{"close", ldb_conn_close},
+		{"beginTransaction", ldb_conn_beginTransaction},
+		{"commit", ldb_conn_commit},
+		{"rollback", ldb_conn_rollback},
+		{"prepareStatement", ldb_conn_prepareStatement},
 
+		// prepare statement
+		{"setString", ldb_pst_setString},
+		{"setInt", ldb_pst_setInt},
+		{"setLLong", ldb_pst_setLLong},
+		{"setDouble", ldb_pst_setDouble},
+		{"executePst", ldb_pst_execute},
+		{"executePstQuery", ldb_pst_executeQuery},
+
+		// result
 		{"next", ldb_rs_next},
 		{"getColumnCount", ldb_rs_getColumnCount},
 		{"getColumnName", ldb_rs_getColumnName},
+		{"getColumnSize", ldb_rs_getColumnSize},
+		{"isnull", ldb_rs_isnull},
+		// get value,
 		{"getString", ldb_rs_getString},
+		{"getStringByName", ldb_rs_getStringByName},
+		{"getInt", ldb_rs_getInt},
+		{"getIntByName", ldb_rs_getIntByName},
+		{"getLLong", ldb_rs_getLLong},
+		{"getLLongByName", ldb_rs_getLLongByName},
+		{"getDouble", ldb_rs_getDouble},
+		{"getDoubleByName", ldb_rs_getDoubleByName},
 		{NULL, NULL}
 };
 

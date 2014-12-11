@@ -225,7 +225,7 @@ dbrs_t dbconn_executeQuery(T conn, const char *sql);
  * @see SQLException.h
  */
 //PreparedStatement_T Connection_prepareStatement(T C, const char *sql, ...) __attribute__((format (printf, 2, 3)));
-dbpst_t Connection_prepareStatement(T C, const char *sql);
+dbpst_t dbconn_prepareStatement(T C, const char *sql);
 
 /**
  * This method can be used to obtain a string describing the last
@@ -251,7 +251,7 @@ const char *dbconn_getLastError(T C);
  * @param url A database url string
  * @return true if supported otherwise false
  */
-//int dbconn_isSupported(const char *url);
+int dbconn_isSupported(const char *url);
 
 #undef T
 #endif

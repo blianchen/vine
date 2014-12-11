@@ -51,12 +51,23 @@ LUALIB_API void use_lua_openlibs (lua_State *L) {
 }
 
 
+void* startLua(void* arg) {
+	lua_State* ls = arg;
+
+	luaL_loadfile(ls, "t.lua");
+	lua_pcall(ls, 0, 0, 0);
+	lua_getglobal(ls, "luafun");
+	lua_pcall(ls, 0, 0, 0);
+
+	return NULL;
+}
+
+
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
 
 
 	exception_init();
-
 
 	lua_State* ls = luaL_newstate();
 //	luaL_openlibs(ls);
@@ -75,17 +86,16 @@ int main(void) {
 	lua_rawset(ls, LUA_GLOBALSINDEX);
 
 
+	st_set_eventsys(ST_EVENTSYS_ALT);
+
 	if (st_init() < 0) {
 //		THROW(st_exception, "st init error.");
 	}
 
-	luaL_loadfile(ls, "t.lua");
-	lua_pcall(ls, 0, 0, 0);
-	lua_getglobal(ls, "luafun");
-	lua_pcall(ls, 0, 0, 0);
+
+	st_thread_create(startLua, ls, 0);
 
 	st_thread_exit(NULL);
-
 	lua_close(ls);
 
 	return 0;

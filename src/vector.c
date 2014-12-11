@@ -16,12 +16,11 @@
 
 #define T vector_t
 struct T {
-        int length;
-        int capacity;
-        void **array;
+	int length;
+	int capacity;
+	void **array;
 	uint32_t timestamp;
 };
-
 
 /* ------------------------------------------------------- Private methods */
 
@@ -35,7 +34,6 @@ static inline void ensureCapacity(T V) {
 
 /* ----------------------------------------------------- Protected methods */
 
-
 T vector_new(int hint) {
 	T V;
 	assert(hint >= 0);
@@ -47,13 +45,11 @@ T vector_new(int hint) {
 	return V;
 }
 
-
 void vector_free(T *V) {
 	assert(V && *V);
 	FREE((*V)->array);
 	FREE(*V);
 }
-
 
 void vector_insert(T V, int i, void *e) {
 	assert(V);
@@ -66,23 +62,20 @@ void vector_insert(T V, int i, void *e) {
 	V->array[i] = e;
 }
 
-
 void *vector_set(T V, int i, void *e) {
 	assert(V);
 	assert(i >= 0 && i < V->length);
 	V->timestamp++;
 	void *prev = V->array[i];
-        V->array[i] = e;
+	V->array[i] = e;
 	return prev;
 }
-
 
 void *vector_get(T V, int i) {
 	assert(V);
 	assert(i >= 0 && i < V->length);
-        return V->array[i];
+	return V->array[i];
 }
-
 
 void *vector_remove(T V, int i) {
 	assert(V);
@@ -96,34 +89,29 @@ void *vector_remove(T V, int i) {
 	return x;
 }
 
-
 void vector_push(T V, void *e) {
-        assert(V);
+	assert(V);
 	V->timestamp++;
-        ensureCapacity(V);
-        V->array[V->length++] = e;
+	ensureCapacity(V);
+	V->array[V->length++] = e;
 }
-
 
 void *vector_pop(T V) {
-        assert(V);
- 	assert(V->length>0);
+	assert(V);
+	assert(V->length > 0);
 	V->timestamp++;
-        return V->array[--V->length];
+	return V->array[--V->length];
 }
-
 
 int vector_isEmpty(T V) {
-        assert(V);
-        return (V->length == 0);
+	assert(V);
+	return (V->length == 0);
 }
-
 
 int vector_size(T V) {
-        assert(V);
-        return V->length;
+	assert(V);
+	return V->length;
 }
-
 
 void vector_map(T V, void apply(const void *element, void *ap), void *ap) {
 	assert(V);
@@ -135,7 +123,6 @@ void vector_map(T V, void apply(const void *element, void *ap), void *ap) {
 		assert(V->timestamp == stamp);
 	}
 }
-
 
 void **vector_toArray(T V) {
 	int i;

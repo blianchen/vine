@@ -29,9 +29,9 @@
 
 
 /**
- * Standard millisecond timeout value for a database call.
+ * Standard microsecond timeout value for a database call.
  */
-#define SQL_DEFAULT_TIMEOUT 3000
+#define SQL_DEFAULT_TIMEOUT 3000000
 
 /**
  * Default TCP/IP Connection timeout in seconds, used when connecting to
@@ -40,14 +40,14 @@
 #define SQL_DEFAULT_TCP_TIMEOUT 3
 
 /**
- * The default maximum number of database connections
+ * The default maximum number of database connections in pool.
  */
-#define SQL_DEFAULT_MAX_CONNECTIONS 10
+#define SQL_DEFAULT_MAX_CONNECTIONS 16
 
 /**
- * The initial number of database connections
+ * The initial number of database connections in pool
  */
-#define SQL_DEFAULT_INIT_CONNECTIONS 5
+#define SQL_DEFAULT_INIT_CONNECTIONS 8
 
 /**
  * Default Connection timeout in seconds, used by reaper to remove

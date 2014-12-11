@@ -6,6 +6,8 @@
 #include <vector.h>
 #include <exception/sql_exception.h>
 
+#include <st/st.h>
+
 #include <db/dbconfig.h>
 #include <db/dbconn.h>
 #include <db/dbpool.h>
@@ -15,6 +17,7 @@
  */
 
 /* ----------------------------------------------------------- Definitions */
+
 #define T dbpool_t
 struct dbpool_s {
 	uri_t url;
@@ -25,7 +28,8 @@ struct dbpool_s {
 //	int sweepInterval;
 	int maxConnections;
 	volatile int stopped;
-	int connectionTimeout;
+	int sqlTimeout;
+//	int connectionTimeout;
 	int initialConnections;
 };
 
@@ -57,6 +61,7 @@ static int fillPool(T P) {
 			}
 			return 0;
 		}
+		dbconn_setQueryTimeout(con, P->sqlTimeout);
 		vector_push(P->pool, con);
 	}
 	return 1;
@@ -99,16 +104,27 @@ int dbpool_getMaxConn(T P) {
 	return P->maxConnections;
 }
 
-void dbpool_setConnTimeout(T P, int connectionTimeout) {
+void dbpool_setSqlTimeout(T P, int sqlTimeout) {
 	assert(P);
-	assert(connectionTimeout > 0);
-	P->connectionTimeout = connectionTimeout;
+	assert(sqlTimeout > 0);
+	P->sqlTimeout = sqlTimeout;
 }
 
-int dbpool_getConnTimeout(T P) {
+int dbpool_getSqlTimeout(T P) {
 	assert(P);
-	return P->connectionTimeout;
+	return P->sqlTimeout;
 }
+
+//void dbpool_setConnTimeout(T P, int connectionTimeout) {
+//	assert(P);
+//	assert(connectionTimeout > 0);
+//	P->connectionTimeout = connectionTimeout;
+//}
+//
+//int dbpool_getConnTimeout(T P) {
+//	assert(P);
+//	return P->connectionTimeout;
+//}
 
 int dbpool_size(T P) {
 	assert(P);
@@ -123,15 +139,16 @@ int dbpool_active(T P) {
 }
 
 /* -------------------------------------------------------- Public methods */
-T dbpool_new(uri_t url, int initialConn) {
+T dbpool_new(uri_t url) {
 	T P;
 	assert(url);
 	NEW(P);
 	P->url = url;
 	P->maxConnections = SQL_DEFAULT_MAX_CONNECTIONS;
 	P->pool = vector_new(SQL_DEFAULT_MAX_CONNECTIONS);
-	P->initialConnections = initialConn ? initialConn : SQL_DEFAULT_INIT_CONNECTIONS;
-	P->connectionTimeout = SQL_DEFAULT_CONNECTION_TIMEOUT;
+	P->initialConnections = SQL_DEFAULT_INIT_CONNECTIONS;
+//	P->connectionTimeout = SQL_DEFAULT_CONNECTION_TIMEOUT;
+	P->sqlTimeout = SQL_DEFAULT_TIMEOUT;
 	return P;
 }
 
@@ -178,16 +195,21 @@ dbconn_t dbpool_getConn(T P) {
 		}
 	}
 	con = NULL;
-	if (size < P->maxConnections) {
+	if (size < P->maxConnections) {		//TODO 在多线程时这个判断不精确，在connect等待时size不会增加
 		con = dbconn_new(P);
 		if (con) {
 			dbconn_setAvailable(con, 0);
 			vector_push(P->pool, con);
+			return con;
 		} else {
-//			DEBUG("Failed to create connection\n");
+			LOG_DEBUG("Failed to create db connection.(%s)", uri_toString(P->url));
+			return NULL;
 		}
 	}
-	return con;
+
+	// pool have full, wait 32ms
+	st_usleep(32 * 1000);
+	return dbpool_getConn(P);	// in gcc, Tail Recursion  must be use -O3
 }
 
 void dbpool_returnConn(T P, dbconn_t conn) {

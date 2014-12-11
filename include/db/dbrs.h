@@ -317,7 +317,7 @@ const void *dbrs_getBlobByName(T R, const char *columnName, int *size);
  * or if the column value cannot be converted to a valid timestamp
  * @see SQLException.h PreparedStatement_setTimestamp
  */
-//time_t dbrs_getTimestamp(T R, int columnIndex);
+time_t dbrs_getTimestamp(T R, int columnIndex);
 
 
 /**
@@ -346,7 +346,7 @@ const void *dbrs_getBlobByName(T R, const char *columnName, int *size);
  * converted to a valid timestamp
  * @see SQLException.h PreparedStatement_setTimestamp
  */
-//time_t dbrs_getTimestampByName(T R, const char *columnName);
+time_t dbrs_getTimestampByName(T R, const char *columnName);
 
 
 /**
@@ -377,7 +377,7 @@ const void *dbrs_getBlobByName(T R, const char *columnName, int *size);
  * DateTime type
  * @see SQLException.h
  */
-//struct tm dbrs_getDateTime(T R, int columnIndex);
+struct tm dbrs_getDateTime(T R, int columnIndex);
 
 
 /**
@@ -407,7 +407,7 @@ const void *dbrs_getBlobByName(T R, const char *columnName, int *size);
  * converted to a valid SQL Date, Time or DateTime type
  * @see SQLException.h
  */
-//struct tm dbrs_getDateTimeByName(T R, const char *columnName);
+struct tm dbrs_getDateTimeByName(T R, const char *columnName);
 
 #undef T
 #endif

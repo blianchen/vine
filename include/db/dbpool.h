@@ -233,7 +233,7 @@ typedef struct dbpool_s *T;
  * @return A new ConnectionPool object
  * @see URL.h
  */
-T dbpool_new(uri_t url, int initialConn);
+T dbpool_new(uri_t url);
 
 /**
  * Disconnect and destroy the pool and release allocated resources.
@@ -286,6 +286,14 @@ void dbpool_setMaxConn(T P, int maxConnections);
  */
 int dbpool_getMaxConn(T P);
 
+
+/**
+ * sql execute timeout
+ */
+void dbpool_setSqlTimeout(T P, int sqlTimeout);
+
+int dbpool_getSqlTimeout(T P);
+
 /**
  * Set a Connection inactive timeout value in seconds. The method,
  * dbpool_reapConnections(), if called will close inactive
@@ -300,14 +308,14 @@ int dbpool_getMaxConn(T P);
  * can be inactive, i.e. not in use, before the reaper close the Connection. 
  * (value > 0)
  */
-void dbpool_setConnTimeout(T P, int connectionTimeout);
+//void dbpool_setConnTimeout(T P, int connectionTimeout);
 
 /**
  * Returns the connection timeout value in seconds. 
  * @param P A ConnectionPool object
  * @return The time an inactive Connection may live before it is closed
  */
-int dbpool_getConneTimeout(T P);
+//int dbpool_getConneTimeout(T P);
 
 /**
  * Returns the current number of connections in the pool. The number of 

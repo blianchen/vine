@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 
-#include <exception/sql_exception.h>
 #include <mem.h>
 #include <uri.h>
 
@@ -28,7 +27,6 @@ const struct cop_t rediscops = {
 		.connstate = redisconn_connstate,
         .free = redisconn_free,
 		.getsocket = redisconn_getsocket,
-//        redisconn_setQueryTimeout,
 //        redisconn_setMaxRows,
         .ping = redisconn_ping,
         .beginTransaction = redisconn_beginTransaction,
@@ -37,7 +35,6 @@ const struct cop_t rediscops = {
 //        redisconn_lastRowId,
 //        redisconn_rowsChanged,
         .execute = redisconn_execute,
-//        .executeQuery = redisconn_executeQuery,
 		.getrs = redisconn_getrs,
         .prepareStatement = redisconn_prepareStatement,
         .getDbLastError = redisconn_getLastError
@@ -48,15 +45,10 @@ struct T {
 	uri_t url;
 	redisContext *db;
 	redisReply *res;
-//	int maxRows;
 	int timeout;
-//	ExecStatusType lastError;
-//	StringBuffer_T sb;
 };
 
-//static uint32_t statementid = 0;
 extern const struct rop_t redisrops;
-//extern const struct pop_t redispops;
 
 
 /* ------------------------------------------------------- Private methods */
@@ -72,6 +64,13 @@ static int doConnect(T C) {
 		port = REDIS_DEFAULT_PORT;
 	}
 	C->db = redisConnectNonBlock(host, port);
+	if ((C->db)->err != 0) {
+		LOG_DEBUG("connect to redis error: url=%s, errno=%d, errstr=%s.", C->url, (C->db)->err, (C->db)->errstr);
+		redisFree(C->db);
+		return 0;
+	}
+
+	C->db->flags &= ~REDIS_CONNECTED;
 
 	return 1;
 }
@@ -86,31 +85,6 @@ static int doConnect(T C) {
 void redisconn_onconn(T C) {
 	//AUTH password
 	//SELECT index
-
-
-	// process login to dbanme
-	/* User */
-//	if (uri_getUser(C->url))
-//		StringBuffer_append(C->sb, "user='%s' ", uri_getUser(C->url));
-//	else if (uri_getParameter(C->url, "user"))
-//		StringBuffer_append(C->sb, "user='%s' ", uri_getParameter(C->url, "user"));
-//	else
-//		ERROR("no username specified in URL");
-//
-//	/* Password */
-//	if (uri_getPassword(C->url))
-//		StringBuffer_append(C->sb, "password='%s' ", uri_getPassword(C->url));
-//	else if (uri_getParameter(C->url, "password"))
-//		StringBuffer_append(C->sb, "password='%s' ", uri_getParameter(C->url, "password"));
-//	else
-//		ERROR("no password specified in URL");
-//
-//	/* Database name */
-//	if (uri_getPath(C->url))
-//		StringBuffer_append(C->sb, "dbname='%s' ", uri_getPath(C->url) + 1);
-//	else
-//		ERROR("no database specified in URL");
-
 }
 
 void redisconn_onstop(T C) {
@@ -122,7 +96,6 @@ T redisconn_new(uri_t url) {
 	assert(url);
 	NEW(C);
 	C->url = url;
-//        C->sb = StringBuffer_create(STRLEN);
 	C->timeout = SQL_DEFAULT_TIMEOUT;
 	if (!doConnect(C))
 		redisconn_free(&C);
@@ -131,9 +104,10 @@ T redisconn_new(uri_t url) {
 
 int redisconn_connstate(T C) {
 	if ((C->db)->err != 0) {
-		redisFree(C->db);
+		LOG_DEBUG("connect to redis error: url=%s, errno=%d, errstr=%s.", C->url, (C->db)->err, (C->db)->errstr);
 		return 0;
 	}
+	C->db->flags |= REDIS_CONNECTED;
 	return 1;
 }
 
@@ -143,7 +117,6 @@ void redisconn_free(T *C) {
 		freeReplyObject((*C)->res);
 	if ((*C)->db)
 		redisFree((*C)->db);
-//        StringBuffer_free(&(*C)->sb);
 	FREE(*C);
 }
 
@@ -151,31 +124,16 @@ int redisconn_getsocket(T C) {
 	return (C->db)->fd;
 }
 
-
-//void redisconn_setQueryTimeout(T C, int ms) {
-//	assert(C);
-//	C->timeout = ms;
-//}
-
-
-//void redisconn_setMaxRows(T C, int max) {
-//	assert(C);
-//        C->maxRows = max;
-//}
-
-
 int redisconn_ping(T C) {
 	assert(C);
-//	return (PQstatus(C->db) == CONNECTION_OK);
+	//TODO redisconn_ping
 	return 1;
 }
 
-
 int redisconn_beginTransaction(T C) {
 	assert(C);
-	return redisAppendCommand(C->db, "MULTI");
+	return redisconn_execute(C, "MULTI");
 }
-
 
 int redisconn_commit(T C) {
 	assert(C);
@@ -187,20 +145,6 @@ int redisconn_rollback(T C) {
 	return redisconn_execute(C, "DISCARD");
 }
 
-
-//long long redisconn_lastRowId(T C) {
-//        assert(C);
-//        return (long long)PQoidValue(C->res);
-//}
-//
-//
-//long long redisconn_rowsChanged(T C) {
-//        assert(C);
-//        char *changes = PQcmdTuples(C->res);
-//        return changes ? Str_parseLLong(changes) : 0;
-//}
-
-
 dbrs_t redisconn_getrs(T C) {
 	/* Read until there is a reply */
 	do {
@@ -209,7 +153,7 @@ dbrs_t redisconn_getrs(T C) {
 		if (redisGetReplyFromReader(C->db, (void **)&(C->res)) == REDIS_ERR)
 			return NULL;
 	} while (C->res == NULL);
-	if ((C->res)->type != REDIS_REPLY_ERROR) {
+	if ((C->res)->type == REDIS_REPLY_ERROR) {
 		return NULL;
 	}
 	dbrs_t dbrs = dbrs_new(redisrs_new(C->res), (rop_t) &redisrops);
@@ -222,11 +166,7 @@ int redisconn_execute(T C, const char *sql) {
 		freeReplyObject(C->res);
 		C->res = NULL;
 	}
-//	if (ap) {
-//		redisvAppendCommand(C->db, sql, ap);
-//	} else {
-		redisAppendCommand(C->db, sql);
-//	}
+	redisAppendCommand(C->db, sql);
 
 	int wdone = 0;
 	/* Write until done */
@@ -238,41 +178,21 @@ int redisconn_execute(T C, const char *sql) {
 	return wdone;
 }
 
-
-//dbrs_t redisconn_executeQuery(T C, const char *sql, va_list ap) {
-//	va_list ap_copy;
-//	assert(C);
-//	freeReplyObject((*C)->res);
-////	PQclear(C->res);
-////	va_copy(ap_copy, ap);
-////	StringBuffer_vset(C->sb, sql, ap_copy);
-////	va_end(ap_copy);
-////	C->res = PQexec(C->db, StringBuffer_toString(C->sb));
-//////	C->lastError = PQresultStatus(C->res);
-////	if (C->lastError == PGRES_TUPLES_OK)
-////		return ResultSet_new(redisconn_new(C->res), (rop_t) & redisrops);
-//	return NULL;
-//}
-
 dbpst_t redisconn_prepareStatement(T C, const char *sql) {
-	LOG_WARN("redis not support prepareStatement");
+	LOG_WARN("redis not support prepareStatement.");
 	return NULL;
 }
-
 
 const char *redisconn_getLastError(T C) {
 	assert(C);
 	if (C->res && C->res->type == REDIS_REPLY_ERROR) {
 		return C->res->str;
+	} else if (C->db->err != 0) {
+		return C->db->errstr;
 	} else {
 		return "unknown error";
 	}
 }
-
-/* Postgres client library finalization */
-//void  redisconn_onstop(void) {
-//        // Not needed, redisconn_free handle finalization
-//}
 
 #ifdef PACKAGE_PROTECTED
 #pragma GCC visibility pop
