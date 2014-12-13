@@ -42,21 +42,26 @@ extern "C" {
 //extern char* log_get_level();
 
 //使用这组宏可以附加文件名和行号
-#define LOG_WARN(msg, ...)  log_warn( ("(%s@%s.%d)"msg), __func__, __FILE__, __LINE__, ##__VA_ARGS__ )
-#define LOG_DEBUG(msg, ...) log_debug( ("(%s@%s.%d)"msg), __func__, __FILE__, __LINE__, ##__VA_ARGS__ )
-#define LOG_INFO(msg, ...)  log_info( ("(%s@%s.%d)"msg), __func__, __FILE__, __LINE__, ##__VA_ARGS__ )
+#define LOG_WARN(msg, ...)  _log_warn(__func__, __FILE__, __LINE__, msg, ##__VA_ARGS__ )
+#define LOG_DEBUG(msg, ...) _log_debug(__func__, __FILE__, __LINE__, msg, ##__VA_ARGS__ )
+#define LOG_INFO(msg, ...)  _log_info(__func__, __FILE__, __LINE__, msg, ##__VA_ARGS__ )
 
 
 //// log输出函数，格式化字符跟printf相同
-extern void log_warn(const char *args, ...);
-extern void log_debug(const char *args, ...);
-extern void log_info(const char *args, ...);
+#define log_warn(msg, ...) _log_warn(NULL, NULL, 0, msg, ##__VA_ARGS__)
+#define log_debug(msg, ...)  _log_debug(NULL, NULL, 0, msg, ##__VA_ARGS__)
+#define log_info(msg, ...)  _log_info(NULL, NULL, 0, msg, ##__VA_ARGS__)
+
+/////// debug info //////////////////////
+void _log_warn(const char* fun, const char* file, int line, const char *msgstr, ...);
+void _log_debug(const char* fun, const char* file, int line, const char *msgstr, ...);
+void _log_info(const char* fun, const char* file, int line, const char *msgstr, ...);
 
 
 //// 初始化，只在第一次使用时调用一次
 void log_init();
 //// 格式化，附加log级别和时间
-void log_format(char *out, const char *prefix, const char *in, va_list args_tr);
+void log_format(char *out, const char *prefix, const char *in, va_list args_tr, const char* fun, const char* file, int line);
 //// 默认的log输出函数，输出到控制台
 void log_out_console(const char *msg);
 //// 文件输出

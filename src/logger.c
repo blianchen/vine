@@ -76,47 +76,57 @@ char* log_get_out_fun() {
 	return log_out_fun_name;
 }
 
-
-void log_warn(const char *msg, ...) {
-	if (LOG_LEVEL_WARN < log_level || !msg) return;
+void _log_warn(const char* fun, const char* file, int line, const char *msgstr, ...) {
+	if (LOG_LEVEL_WARN < log_level || !msgstr) return;
 	if (!log_out_fun) {
 		log_init();
 	}
 	char buf[LOG_MAX_CHAR_NUM];
 	va_list args_tr;
-	va_start(args_tr, msg);
-	log_format(buf, LOG_FIX_WARN, msg, args_tr);
+	va_start(args_tr, msgstr);
+	if (fun) {
+		log_format(buf, LOG_FIX_WARN, msgstr, args_tr, fun, file, line);
+	} else {
+		log_format(buf, LOG_FIX_WARN, msgstr, args_tr, NULL, NULL, 0);
+	}
 	va_end(args_tr);
 
 	log_out_fun(buf);
 }
 
-void log_debug(const char *msg, ...) {
-	if (LOG_LEVEL_DEBUG < log_level || !msg) return;
+void _log_debug(const char* fun, const char* file, int line, const char *msgstr, ...) {
+	if (LOG_LEVEL_DEBUG < log_level || !msgstr) return;
 	if (!log_out_fun) {
 		log_init();
 	}
 
 	char buf[LOG_MAX_CHAR_NUM];
 	va_list args_tr;
-	va_start(args_tr, msg);
-	log_format(buf, LOG_FIX_DEBUG, msg, args_tr);
+	va_start(args_tr, msgstr);
+	if (fun) {
+		log_format(buf, LOG_FIX_DEBUG, msgstr, args_tr, fun, file, line);
+	} else {
+		log_format(buf, LOG_FIX_DEBUG, msgstr, args_tr, NULL, NULL, 0);
+	}
 	va_end(args_tr);
 
 	log_out_fun(buf);
 }
 
-
-void log_info(const char *msg, ...) {
-	if (LOG_LEVEL_INFO < log_level || !msg) return;
+void _log_info(const char* fun, const char* file, int line, const char *msgstr, ...) {
+	if (LOG_LEVEL_INFO < log_level || !msgstr) return;
 	if (!log_out_fun) {
 		log_init();
 	}
 
 	char buf[LOG_MAX_CHAR_NUM];
 	va_list args_tr;
-	va_start(args_tr, msg);
-	log_format(buf, LOG_FIX_INFO, msg, args_tr);
+	va_start(args_tr, msgstr);
+	if (fun) {
+		log_format(buf, LOG_FIX_INFO, msgstr, args_tr, fun, file, line);
+	} else {
+		log_format(buf, LOG_FIX_INFO, msgstr, args_tr, NULL, NULL, 0);
+	}
 	va_end(args_tr);
 
 	log_out_fun(buf);
@@ -164,7 +174,7 @@ void log_init() {
 }
 
 
-void log_format(char *out, const char *prefix, const char *in, va_list args) {
+void log_format(char *out, const char *prefix, const char *in, va_list args, const char* fun, const char* file, int line) {
 	time_t timer = time(NULL);
 	struct tm *t = localtime(&timer);
 	char timeBuf[LOG_TIME_LEN];
@@ -175,13 +185,14 @@ void log_format(char *out, const char *prefix, const char *in, va_list args) {
 	cp += LOG_PREFIX_LEN - 1;
 	strcpy(cp, timeBuf);
 	cp += LOG_TIME_LEN - 1;
-//	strcpy(cp, in);
+	if (fun) {
+		int dbinf = snprintf(cp, 256, "(%s@%s.%d) ", fun, file, line);
+		cp += dbinf;
+	}
 	int maxPrint = LOG_MAX_CHAR_NUM - (cp-out);
 	int pn = vsnprintf(cp, maxPrint, in, args);  //当实际字符串长度超过maxPrint， 该函数返回的是实际长度，而不是maxPrint
 
 	//// 字符串较长时，多余部分会被截掉，这里把最后3个字符改为"..."
-//	int len = strlen(out);
-//	if (len >= LOG_MAX_CHAR_NUM-1) {
 	if (pn > maxPrint) {
 		int i = LOG_MAX_CHAR_NUM - 4;
 		while (i < LOG_MAX_CHAR_NUM - 1) {

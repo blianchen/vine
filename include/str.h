@@ -142,4 +142,12 @@ long long str_parseLLong(const char *s);
 double str_parseDouble(const char *s);
 
 
+
+char* str_fromInt(int i);
+
+char* str_fromLLong(long long ll);
+
+char* str_fromDouble(double d);
+
+
 #endif

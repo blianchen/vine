@@ -5,15 +5,14 @@
  *      Author: blc
  */
 #include <stdint.h>
+#include <string.h>
 
-#include <exception/sql_exception.h>
 #include <mem.h>
 #include <logger.h>
 
 #include <db/dbpool.h>
 #include <db/dbconn.h>
 #include <db/dbrs.h>
-#include "luautils.h"
 
 #include <luaapi/luadb.h>
 
@@ -29,8 +28,7 @@ static int ldb_version(lua_State* l) {
 }
 
 static int ldb_isSupported(lua_State* l) {
-	size_t len;
-	const char* url = luaL_checklstring(l, 1, &len);
+	const char* url = luaL_checkstring(l, 1);
 	if (dbconn_isSupported(url)) {
 		lua_pushinteger(l, 1);
 	} else {
@@ -42,8 +40,7 @@ static int ldb_isSupported(lua_State* l) {
 
 ///////////////////////////// conntion poll ///////////////////////////////
 static int ldb_pool_new(lua_State* l) {
-	size_t len;
-	const char* url = luaL_checklstring(l, 1, &len);	//url string
+	const char* url = luaL_checkstring(l, 1);	//url string
 	uri_t uri = uri_new(url);
 	dbpool_t pool = dbpool_new(uri);
 
@@ -108,8 +105,7 @@ static int ldb_pool_active(lua_State* l) {
 //////////////////////////////  db conntion //////////////////////
 static int ldb_conn_execute(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
-	size_t len;
-	const char* sql = luaL_checklstring(l, 2, &len);
+	const char* sql = luaL_checkstring(l, 2);
 
 //	TRY
 		dbconn_execute(conn, sql);
@@ -121,8 +117,7 @@ static int ldb_conn_execute(lua_State* l) {
 
 static int ldb_conn_executeQuery(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
-	size_t len;
-	const char* sql = luaL_checklstring(l, 2, &len);
+	const char* sql = luaL_checkstring(l, 2);
 
 	dbrs_t rs = NULL;
 //	TRY
@@ -137,13 +132,7 @@ static int ldb_conn_executeQuery(lua_State* l) {
 
 static int ldb_conn_close(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
-
-//	TRY
-		dbconn_close(conn);
-//	ELSE
-//		LOG_DEBUG("DB execute error: (%s)", dbconn_getLastError(conn));
-//	END_TRY
-
+	dbconn_close(conn);
 	return 0;
 }
 
@@ -167,8 +156,7 @@ static int ldb_conn_rollback(lua_State* l) {
 
 static int ldb_conn_prepareStatement(lua_State* l) {
 	dbconn_t conn = lua_touserdata(l, 1);
-	size_t len;
-	const char* sql = luaL_checklstring(l, 2, &len);
+	const char* sql = luaL_checkstring(l, 2);
 	dbpst_t pst = dbconn_prepareStatement(conn, sql);
 	lua_pushlightuserdata(l, pst);
 	return 1;
@@ -279,8 +267,7 @@ static int ldb_rs_getString(lua_State* l) {
 
 static int ldb_rs_getStringByName(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
-	size_t len;
-	const char* name = luaL_checklstring(l, 2, &len);
+	const char* name = luaL_checkstring(l, 2);
 	const char* v = dbrs_getStringByName(rs, name);
 	lua_pushstring(l, v);
 	return 1;
@@ -296,8 +283,7 @@ static int ldb_rs_getInt(lua_State* l) {
 
 static int ldb_rs_getIntByName(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
-	size_t len;
-	const char* name = luaL_checklstring(l, 2, &len);
+	const char* name = luaL_checkstring(l, 2);
 	int v = dbrs_getIntByName(rs, name);
 	lua_pushinteger(l, v);
 	return 1;
@@ -313,8 +299,7 @@ static int ldb_rs_getLLong(lua_State* l) {
 
 static int ldb_rs_getLLongByName(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
-	size_t len;
-	const char* name = luaL_checklstring(l, 2, &len);
+	const char* name = luaL_checkstring(l, 2);
 	int64_t v = dbrs_getLLongByName(rs, name);
 	lua_pushnumber(l, v);
 	return 1;
@@ -330,10 +315,81 @@ static int ldb_rs_getDouble(lua_State* l) {
 
 static int ldb_rs_getDoubleByName(lua_State* l) {
 	dbrs_t rs = lua_touserdata(l, 1);
-	size_t len;
-	const char* name = luaL_checklstring(l, 2, &len);
+	const char* name = luaL_checkstring(l, 2);
 	double v = dbrs_getDoubleByName(rs, name);
 	lua_pushnumber(l, v);
+	return 1;
+}
+
+
+/////////////////////// help function //////
+static int ldb_help_nosqlGet(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int type = lua_type(l, 2);
+	if (type != LUA_TSTRING) {
+		LOG_DEBUG("key type(%d) must be string.", type);
+		lua_pushnil(l);
+		return 1;
+	}
+	const char* key = luaL_checkstring(l, 2);
+
+	char sql[128] = {"GET "};
+	strcat(sql, key);
+
+	dbconn_t conn = dbpool_getConn(pool);
+	dbrs_t rs = dbconn_executeQuery(conn, sql);
+	const char* v = dbrs_getString(rs, 1);
+	if (v)
+		lua_pushstring(l, v);	// copy str
+	else
+		lua_pushnil(l);
+	dbconn_close(conn);
+	return 1;
+}
+
+static int ldb_help_nosqlSet(lua_State* l) {
+	dbpool_t pool = lua_touserdata(l, 1);
+	int type = lua_type(l, 2);
+	if (type != LUA_TSTRING) {
+		LOG_DEBUG("key type(%d) must be string.", type);
+		lua_pushnil(l);
+		return 1;
+	}
+	const char* key = luaL_checkstring(l, 2);
+	char sql[128] = {"SET "};
+	strcat(sql, key);
+
+	char buf[24];
+	int ki;
+	double kn;
+	type = lua_type(l, 3);
+	switch (type) {
+	case LUA_TSTRING:
+		key = luaL_checkstring(l, 3);
+		break;
+	case LUA_TBOOLEAN:
+		ki = lua_toboolean(l, 3);
+		sprintf(buf, "%d", ki);
+		key = buf;
+		break;
+	case LUA_TNUMBER:
+		kn = luaL_checknumber(l, 3);
+		sprintf(buf, "%lf", kn);
+		key = buf;
+		break;
+	default:
+		LOG_DEBUG("invalid value type(%d).", type);
+		lua_pushinteger(l, -1);
+		return 1;
+	}
+	key = buf;
+	strcat(sql, " ");
+	strcat(sql, key);
+
+	dbconn_t conn = dbpool_getConn(pool);
+	dbconn_execute(conn, sql);
+	dbconn_close(conn);
+	lua_pushinteger(l, 0);
 	return 1;
 }
 
@@ -342,7 +398,7 @@ static const luaL_Reg funs[] = {
 		{"version", ldb_version},
 		{"isSupported", ldb_isSupported},
 
-		// pool
+		//////////////////// pool
 		{"newPool", ldb_pool_new},
 		{"setInitialConn", ldb_pool_setInitialConn},
 		{"setMaxConn", ldb_pool_setMaxConn},
@@ -353,7 +409,7 @@ static const luaL_Reg funs[] = {
 		{"getConntion", ldb_pool_getConn},
 		{"active", ldb_pool_active},
 
-		// connection
+		/////////////////// connection
 		{"execute", ldb_conn_execute},
 		{"executeQuery", ldb_conn_executeQuery},
 		{"close", ldb_conn_close},
@@ -362,7 +418,7 @@ static const luaL_Reg funs[] = {
 		{"rollback", ldb_conn_rollback},
 		{"prepareStatement", ldb_conn_prepareStatement},
 
-		// prepare statement
+		/////////////////// prepare statement
 		{"setString", ldb_pst_setString},
 		{"setInt", ldb_pst_setInt},
 		{"setLLong", ldb_pst_setLLong},
@@ -370,7 +426,7 @@ static const luaL_Reg funs[] = {
 		{"executePst", ldb_pst_execute},
 		{"executePstQuery", ldb_pst_executeQuery},
 
-		// result
+		///////////////////// result
 		{"next", ldb_rs_next},
 		{"getColumnCount", ldb_rs_getColumnCount},
 		{"getColumnName", ldb_rs_getColumnName},
@@ -385,6 +441,10 @@ static const luaL_Reg funs[] = {
 		{"getLLongByName", ldb_rs_getLLongByName},
 		{"getDouble", ldb_rs_getDouble},
 		{"getDoubleByName", ldb_rs_getDoubleByName},
+
+		//////////////////// help function ///
+		{"get", ldb_help_nosqlGet},
+		{"set", ldb_help_nosqlSet},
 		{NULL, NULL}
 };
 

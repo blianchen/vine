@@ -7,52 +7,50 @@
 
 #include <stdio.h>
 
+#include <logger.h>
 #include <mem.h>
 
-#include "luautils.h"
-//
-//int luastack_to_valist(lua_State* l, va_list* ap, char* argstk, ...) {
-//#define INIT_MALLOC_SIZE 1024
-//	char* arg;
-//	int argNum = lua_gettop(l);
-//	if (argNum > 2) {
-//		int memSize = INIT_MALLOC_SIZE;
-//		arg = MALLOC(memSize);
-//		argstk
-//		va_start(*ap, argstk);
-//
-//		int i, type;
-//		size_t strLen;
-//		for (i=3; i<=argNum; i++) {
-//			if (argstk - (char*)ap > INIT_MALLOC_SIZE - 16) {
-//				memSize += INIT_MALLOC_SIZE;
-////				args = REALLOC(args, memSize);
-//			}
-//			type = lua_type(l, i);
-//			switch (type) {
-//			case LUA_TNUMBER:
-//				*argstk = luaL_checknumber(l, i);
-////				args = &va_arg(*ap, lua_Number);
-//				break;
-//			case LUA_TSTRING:
-//				*argstk = luaL_checklstring(l, i, &strLen);
-////				args = &va_arg(*ap, char*);
-//				break;
-////			case LUA_TBOOLEAN:
-////				*args = lua_toboolean(l, i);
-////				args = &va_arg(*ap, int);
-////				break;
-//			default:
-////				lua_pushstring(l, "error args");
-//				return 0;
-//				break;
-//			}
-//		}
-////		va_start(*ap, argstk);
-//	}
-//	return 1;
-//}
+#include <luaapi/luautils.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
+static const luaL_Reg uselualibs[] = {
+  {"", luaopen_base},
+  {LUA_LOADLIBNAME, luaopen_package},
+  {LUA_TABLIBNAME, luaopen_table},
+//  {LUA_IOLIBNAME, luaopen_io},
+  {LUA_OSLIBNAME, luaopen_os},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_MATHLIBNAME, luaopen_math},
+  {LUA_DBLIBNAME, luaopen_debug},
+  {NULL, NULL}
+};
+
+
+void open_lua_libs (lua_State *l) {
+  const luaL_Reg *lib = uselualibs;
+  for (; lib->func; lib++) {
+    lua_pushcfunction(l, lib->func);
+    lua_pushstring(l, lib->name);
+    lua_call(l, 1, 0);
+  }
+}
+
+void load_lua_file(lua_State* l, char* file) {
+	if (luaL_loadfile(l, file)) {
+		size_t len;
+		const char* str = luaL_checklstring(l, -1, &len);
+		log_warn(str);
+	}
+}
+
+void call_lua_fun(lua_State* l, int nargs, int nresults) {
+	if (lua_pcall(l, nargs, nresults, 0)) {
+		size_t len;
+		const char* str = luaL_checklstring(l, -1, &len);
+		log_warn(str);
+	}
+}
 
 void dump_cstack(lua_State* l) {
 	int n = lua_gettop(l);

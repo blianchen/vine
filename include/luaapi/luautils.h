@@ -12,7 +12,11 @@
 
 #include <lua.h>
 
-//int luastack_to_valist(lua_State* l, va_list* ap, char* argstk, ...);
+void open_lua_libs (lua_State *l);
+
+void load_lua_file(lua_State* l, char* file);
+
+void call_lua_fun(lua_State* l, int nargs, int nresults);
 
 void dump_cstack(lua_State* l);
 

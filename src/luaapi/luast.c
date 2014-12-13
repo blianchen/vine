@@ -48,8 +48,8 @@ static void* st_thread_callback_fun(void* arg) {
 	int ref = lua_tointeger(tl, -1);
 	int nargs = lua_tointeger(tl, -2);
 	lua_pop(tl, 2);
-//	int r = lua_pcall(tl, nargs, 0, 0);
-	lua_pcall(tl, nargs, 0, 0);
+
+	call_lua_fun(tl, nargs, 0);
 
 	/* detach coroutine from GLOBAL table */
 	lua_pushlightuserdata(tl, &LUA_THREAD_GLOBAL_IDX);

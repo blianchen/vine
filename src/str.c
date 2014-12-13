@@ -122,36 +122,52 @@ char *str_vcat(const char *s, va_list ap) {
 int str_parseInt(const char *s) {
 	if (STR_UNDEF(s))
 		THROW(sys_exception, "NumberFormatException: For input string null");
-        errno = 0;
-        char *e;
-	int i = (int)strtol(s, &e, 10);
+	errno = 0;
+	char *e;
+	int i = (int) strtol(s, &e, 10);
 	if (errno || (e == s))
 		THROW(sys_exception, "NumberFormatException: For input string %s -- %s", s, getLastErrorText());
 	return i;
 }
 
-
 long long str_parseLLong(const char *s) {
 	if (STR_UNDEF(s))
 		THROW(sys_exception, "NumberFormatException: For input string null");
-        errno = 0;
-        char *e;
+	errno = 0;
+	char *e;
 	long long ll = strtoll(s, &e, 10);
 	if (errno || (e == s))
 		THROW(sys_exception, "NumberFormatException: For input string %s -- %s", s, getLastErrorText());
 	return ll;
 }
 
-
 double str_parseDouble(const char *s) {
 	if (STR_UNDEF(s))
 		THROW(sys_exception, "NumberFormatException: For input string null");
-        errno = 0;
-        char *e;
+	errno = 0;
+	char *e;
 	double d = strtod(s, &e);
 	if (errno || (e == s))
 		THROW(sys_exception, "NumberFormatException: For input string %s -- %s", s, getLastErrorText());
 	return d;
+}
+
+char* str_fromInt(int i) {
+	char* s = MALLOC(16);
+	sprintf(s, "%d", i);
+	return s;
+}
+
+char* str_fromLLong(long long ll) {
+	char* s = MALLOC(24);
+	sprintf(s, "%lld", ll);
+	return s;
+}
+
+char* str_fromDouble(double d) {
+	char* s = MALLOC(24);
+	sprintf(s, "%g", d);
+	return s;
 }
 
 #ifdef PACKAGE_PROTECTED

@@ -106,15 +106,14 @@ int redisrs_isnull(T R, int columnIndex) {
 	return ir;
 }
 
-//static char* _getValue(redisReply* r) {
-//	if (r->type == REDIS_REPLY_STRING) {
-//		return r->str;
-//	}
-//}
-
 const char *redisrs_getString(T R, int columnIndex) {
 	assert(R);
 	if ((R->res)->type == REDIS_REPLY_STRING) {
+		return (R->res)->str;
+	}
+	else if ((R->res)->type == REDIS_REPLY_INTEGER) {
+		(R->res)->type = REDIS_REPLY_STRING;
+		(R->res)->str = str_fromLLong((R->res)->integer);
 		return (R->res)->str;
 	}
 	else if ((R->res)->type == REDIS_REPLY_ARRAY) {

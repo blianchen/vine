@@ -17,9 +17,8 @@
 #include <exception/exception.h>
 
 #include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
+#include <luaapi/luautils.h>
 #include <luaapi/luast.h>
 #include <luaapi/luadb.h>
 #include <luaapi/luanet.h>
@@ -28,37 +27,13 @@
 #include <stdint.h>
 
 
-static const luaL_Reg uselualibs[] = {
-  {"", luaopen_base},
-  {LUA_LOADLIBNAME, luaopen_package},
-  {LUA_TABLIBNAME, luaopen_table},
-//  {LUA_IOLIBNAME, luaopen_io},
-  {LUA_OSLIBNAME, luaopen_os},
-  {LUA_STRLIBNAME, luaopen_string},
-  {LUA_MATHLIBNAME, luaopen_math},
-  {LUA_DBLIBNAME, luaopen_debug},
-  {NULL, NULL}
-};
-
-
-LUALIB_API void use_lua_openlibs (lua_State *L) {
-  const luaL_Reg *lib = uselualibs;
-  for (; lib->func; lib++) {
-    lua_pushcfunction(L, lib->func);
-    lua_pushstring(L, lib->name);
-    lua_call(L, 1, 0);
-  }
-}
-
-
-void* startLua(void* arg) {
+void* startLuaMain(void* arg) {
 	lua_State* ls = arg;
 
-	luaL_loadfile(ls, "t.lua");
-	lua_pcall(ls, 0, 0, 0);
-	lua_getglobal(ls, "luafun");
-	lua_pcall(ls, 0, 0, 0);
-
+	load_lua_file(ls, "t.lua");		// lua file
+	call_lua_fun(ls, 0, 0);
+	lua_getglobal(ls, "luafun");	// lua function
+	call_lua_fun(ls, 0, 0);
 	return NULL;
 }
 
@@ -70,8 +45,7 @@ int main(void) {
 	exception_init();
 
 	lua_State* ls = luaL_newstate();
-//	luaL_openlibs(ls);
-	use_lua_openlibs(ls);
+	open_lua_libs(ls);
 
 	luaopen_stlib(ls);
 	luaopen_netlib(ls);
@@ -85,15 +59,15 @@ int main(void) {
 	lua_newtable(ls);
 	lua_rawset(ls, LUA_GLOBALSINDEX);
 
-
+	//// st
 	st_set_eventsys(ST_EVENTSYS_ALT);
 
 	if (st_init() < 0) {
 //		THROW(st_exception, "st init error.");
 	}
 
-
-	st_thread_create(startLua, ls, 0);
+	//// lua main fun
+	st_thread_create(startLuaMain, ls, 0);
 
 	st_thread_exit(NULL);
 	lua_close(ls);
