@@ -10,36 +10,38 @@
 
 #include <mem.h>
 #include <exception/st_exception.h>
+#include <logger.h>
 
 #include <luaapi/luast.h>
 
 
 char LUA_THREAD_GLOBAL_IDX;
 
-static int thread_create(lua_State* L) {
+static int thread_create(lua_State* l) {
 	/* save stack index */
-	int base = lua_gettop(L);
+	int base = lua_gettop(l);
 
 	/* get global thread table */
-	lua_pushlightuserdata(L, &LUA_THREAD_GLOBAL_IDX);
-	lua_rawget(L, LUA_GLOBALSINDEX);
+	lua_pushlightuserdata(l, &LUA_THREAD_GLOBAL_IDX);
+	lua_rawget(l, LUA_GLOBALSINDEX);
 
-	lua_State *tl = lua_newthread(L);
+	lua_State *tl = lua_newthread(l);
 
-	luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1, "Lua function expected");
-	lua_pushvalue(L, 1); /* move function to top */
-	lua_xmove(L, tl, 1); /* move function from L to NL */
+	luaL_argcheck(l, lua_isfunction(l, 1) && !lua_iscfunction(l, 1), 1, "Lua function expected.");
+	lua_pushvalue(l, 1); /* move function to top */
+	lua_xmove(l, tl, 1); /* move function from L to NL */
 
 	/* get ref */
-	int ref = luaL_ref(L, -2);
+	int ref = luaL_ref(l, -2);
 	if (ref == LUA_NOREF) {
-		lua_settop(L, base); /* restore main thread stack */
-		return 0;
+		lua_settop(l, base); /* restore main thread stack */
+		lua_pushnil(l);
+		return 1;
 	}
 
-	lua_settop(L, base); /* restore main thread stack */
+	lua_settop(l, base); /* restore main thread stack */
 
-	lua_pushinteger(L, ref);
+	lua_pushinteger(l, ref);
 	return 1;
 }
 
@@ -101,7 +103,6 @@ static int thread_run(lua_State* L) {
 static int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
 	st_usleep(ms * 1000);
-//	st_usleep(ms);
 	return 0;
 }
 

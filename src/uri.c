@@ -140,6 +140,7 @@ struct URI_S {
 	param_t params;
 	char **paramNames;
 	uchar_t *data;
+
 	uchar_t *buffer;
 	uchar_t *marker, *ctx, *limit, *token;
 /* Keep the above align with zild uri_T */
@@ -192,7 +193,7 @@ static T _ctor(uchar_t *data) {
 	T U;
 	NEW(U);
 	U->data = data;
-	YYCURSOR = U->data;
+	U->buffer = U->data;
 	U->port = UNKNOWN_PORT;
 	YYLIMIT = U->data + strlen((char*) U->data);
 	if (!parse_uri(U))

@@ -13,6 +13,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include <str.h>
 #include <utils.h>
 
 #ifdef MULTI_THREAD
@@ -150,13 +151,13 @@ void log_init() {
 		char strLine[LOG_CFG_ROW_LEN];
 		if (!fgets(strLine, LOG_CFG_ROW_LEN, cfgFile))
 			break;
-		if (strLine[0] == '#' || strLine[0] == '\0') continue;
+		if (strLine[0] == '#' || str_trim(strLine)[0] == '\0') continue;
 		// 分割'='
 		char *name;
 		char *value;
-		name = trim(strtok(strLine, delims));
+		name = str_trim(strtok(strLine, delims));
 		if (!name || strlen(name) == 0) continue;
-		value = trim(strtok(NULL, delims));
+		value = str_trim(strtok(NULL, delims));
 		if (!value || strlen(value) == 0) continue;
 //		char uperValue[LOG_OUT_FUN_NAME_LEN];
 //		STRUPR(value, uperValue);

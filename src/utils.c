@@ -13,11 +13,27 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include <mem.h>
+
 #ifdef WIN32
 #include <windows.h>
 #else
 //#include <wchar.h>
 #endif
+
+#include "kv_options.rec"
+void clean_kv_option(kv_option_t *kv) {
+	if (*kv == NULL) return;
+	kv_option_t kv1, kv2;
+	kv1 = *kv;
+	kv2 = kv1.next;
+	FREE(kv1);
+	while (kv2) {
+		kv1 = kv2;
+		kv2 = kv1.next;
+		FREE(kv1);
+	}
+}
 
 int cpu_count(void) {
 	int n;
@@ -35,20 +51,6 @@ int cpu_count(void) {
 	return n;
 }
 
-
-char* trim(char* str) {
-	char *start=NULL, *end=NULL;
-	if(str==NULL) return NULL;
-
-	while( IS_SPACE(*str) ) str++;
-
-	for(start=str;(*str)!='\0';++str) {
-		if ( !IS_SPACE(*str) )
-			end=str;
-	}
-	if(end)  *(end+1) = '\0';
-	return start;
-}
 
 unsigned int ELFHash(char* str, unsigned int len) {
    unsigned int hash = 0;

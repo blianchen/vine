@@ -8,6 +8,17 @@
 extern "C" {
 #endif
 
+// key1=value1, key2=value2...
+typedef struct kv_option {
+	char *name;
+	char *value;
+	struct kv_option *next;
+} *kv_option_t;
+
+kv_option_t parse_kv_option(char *option);
+void clean_kv_option(kv_option_t *kv);
+
+
 #define i2a(i) (x[0] = ((i) / 10) + '0', x[1] = ((i) % 10) + '0')
 
 static inline int a2i(const char *a, int l) {
@@ -21,7 +32,6 @@ static inline int a2i(const char *a, int l) {
 //#define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\f'||(x)=='\b'||(x)=='\t')
 #define IS_SPACE(x) ((x)==' '||(x)=='\r'||(x)=='\n'||(x)=='\t')
 
-extern char* trim(char* str);
 
 int cpu_count(void);
 

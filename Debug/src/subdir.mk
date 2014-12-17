@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/base64.c \
+../src/cJSON.c \
 ../src/exception.c \
 ../src/hashmap.c \
 ../src/logger.c \
@@ -21,6 +22,7 @@ C_SRCS += \
 
 OBJS += \
 ./src/base64.o \
+./src/cJSON.o \
 ./src/exception.o \
 ./src/hashmap.o \
 ./src/logger.o \
@@ -37,6 +39,7 @@ OBJS += \
 
 C_DEPS += \
 ./src/base64.d \
+./src/cJSON.d \
 ./src/exception.d \
 ./src/hashmap.d \
 ./src/logger.d \

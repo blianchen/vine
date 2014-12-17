@@ -115,6 +115,9 @@ char *str_cat(const char *s, ...) __attribute__((format (printf, 1, 2)));
 char *str_vcat(const char *s, va_list ap);
 
 
+char* str_trim(char* str);
+
+
 /**
  * Parses the string argument as a signed integer in base 10.
  * @param s A string

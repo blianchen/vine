@@ -74,7 +74,7 @@ typedef void (*LogOutFun)(const char *);
 
 // 输出函数名（LogOutFunMap.name）的最大字符数
 #define LOG_OUT_FUN_NAME_LEN 20
-#define LOG_CFG_ROW_LEN 256
+#define LOG_CFG_ROW_LEN 512
 
 typedef struct {
 	char *name;

@@ -7,6 +7,8 @@
 
 #include <luaapi/luanet.h>
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 
 static int read_net_address(const char *str, struct sockaddr_in *sin) {
@@ -16,14 +18,14 @@ static int read_net_address(const char *str, struct sockaddr_in *sin) {
 
 	strcpy(host, str);
 	if ((p = strchr(host, ':')) == NULL) {
-		LOG_DEBUG("invalid address: %s\n", host);
-		return -1;
+		LOG_WARN("invalid address: %s\n", host);
+		return 0;
 	}
 	*p++ = '\0';
 	port = (unsigned short) atoi(p);
 	if (port < 1) {
-		LOG_DEBUG("invalid port: %s\n", p);
-		return -1;
+		LOG_WARN("invalid port: %s\n", p);
+		return 0;
 	}
 
 	memset(sin, 0, sizeof(struct sockaddr_in));
@@ -31,60 +33,101 @@ static int read_net_address(const char *str, struct sockaddr_in *sin) {
 	sin->sin_port = htons(port);
 	if (host[0] == '\0') {
 		sin->sin_addr.s_addr = INADDR_ANY;
-		return 0;
+		return 1;
 	}
 	sin->sin_addr.s_addr = inet_addr(host);
 	if (sin->sin_addr.s_addr == INADDR_NONE) {
 		/* not dotted-decimal */
 		if ((hp = gethostbyname(host)) == NULL) {
-			LOG_DEBUG("can't resolve address: %s\n", host);
-			return -1;
+			LOG_WARN("can't resolve address: %s\n", host);
+			return 0;
 		}
 		memcpy(&sin->sin_addr, hp->h_addr, hp->h_length);
 	}
-	return 0;
+	return 1;
+}
+
+static int read_ip_address(const char* host, struct sockaddr_in *sin) {
+	struct hostent *hp;
+	if (host == NULL || host[0] == '\0') {
+		sin->sin_addr.s_addr = INADDR_ANY;
+		return 1;
+	}
+	sin->sin_addr.s_addr = inet_addr(host);
+	if (sin->sin_addr.s_addr == INADDR_NONE) {
+		/* not dotted-decimal */
+		if ((hp = gethostbyname(host)) == NULL) {
+			LOG_WARN("can't resolve address: %s\n", host);
+			return 0;
+		}
+		memcpy(&sin->sin_addr, hp->h_addr, hp->h_length);
+	}
+	return 1;
 }
 
 static int server_socket(lua_State* l) {
-	size_t adrl;
-	// gethostbyname
-	const char* adr = luaL_checklstring(l, 1, &adrl);		//ip or domain name
-	int port = luaL_checkinteger(l, 2);				//port
+	int port = luaL_checkinteger(l, 1);	//param 1: port
+	const char* adr = NULL;
+	if (lua_gettop(l) > 1) {
+		// gethostbyname
+		adr = luaL_checkstring(l, 2);	//param 2: ip or domain name
+	}
 
 	int sock;
 	if ((sock=socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		LOG_DEBUG("Create socket error: %s(errno: %d)", getLastErrorText(), getLastError());
-//		THROW(NetException, "create socket error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
-	int n = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n)) < 0) {
-		close(sock);
-		LOG_DEBUG("setsockopt error: %s(errno: %d)", getLastErrorText(), getLastError());
-//		THROW(NetException, "setsockopt error: %s(errno: %d)", getLastErrorText(), getLastError());
+
+	//param 3:  options : reuseaddr=true,keepalive=true
+	if (lua_gettop(l) > 2) {
+		int n = 1, ir;
+		int optstr = luaL_checkstring(l, 3);
+		if (optstr == NULL) break;
+		kv_option_t kv = parse_kv_option(optstr);
+		while (kv) {
+			if (str_isEqual(kv.name, "reuseaddr") && str_isEqual(kv.value, "true")) {
+				ir = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n));
+			} else if (str_isEqual(kv.name, "keepalive") && str_isEqual(kv.value, "true")) {
+				ir = setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char *)&n, sizeof(n));
+			}
+			if (ir < 0) {
+				close(sock);
+				LOG_DEBUG("setsockopt error: %s(errno: %d)", getLastErrorText(), getLastError());
+				lua_pushnil(l);
+				return 1;
+			}
+			kv = kv.next;
+		}
+		clean_kv_option(&kv);
 	}
 
 	//初始化
 	struct sockaddr_in servaddr;
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);	//IP地址设置成INADDR_ANY,让系统自动获取本机的IP地址。
+	read_ip_address(adr, &servaddr);
 	servaddr.sin_port = htons(port);		//设置的端口为DEFAULT_PORT
 	if (bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
 		close(sock);
 		LOG_DEBUG("Bind socket error: %s(errno: %d)", getLastErrorText(), getLastError());
-//		THROW(NetException, "bind socket error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
 	if (listen(sock, 256) == -1) {
 		close(sock);
 		LOG_DEBUG("Listen socket error: %s(errno: %d)", getLastErrorText(), getLastError());
-//		THROW(NetException, "listen socket error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
 
 	st_netfd_t st_srvfd;
 	if ((st_srvfd = st_netfd_open_socket(sock)) == NULL) {
 		close(sock);
 		LOG_DEBUG("st_netfd_open_socket error: %s(errno: %d)", getLastErrorText(), getLastError());
-//		THROW(NetException, "st_netfd_open_socket error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
 
 	lua_pushlightuserdata(l, st_srvfd);		// return a server_socket
@@ -98,7 +141,9 @@ static int accept_socket(lua_State* l) {
 	int n = sizeof(cli_add);
 	st_netfd_t st_clifd = st_accept(st_srvfd, (struct sockaddr *)&cli_add, &n, ST_UTIME_NO_TIMEOUT);
 	if (st_clifd == NULL) {
-
+		LOG_DEBUG("socket accept error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
 
 	char* ip = inet_ntoa(cli_add.sin_addr);
@@ -112,12 +157,13 @@ static int accept_socket(lua_State* l) {
 
 static int client_socket(lua_State* l) {
 	int sock;
-	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		//print_sys_error("socket");
+	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
+		LOG_DEBUG("socket create error: %s(errno: %d)", getLastErrorText(), getLastError());
+		lua_pushnil(l);
+		return 1;
 	}
 	st_netfd_t cli_nfd;
 	if ((cli_nfd = st_netfd_open_socket(sock)) == NULL) {
-		//print_sys_error("st_netfd_open_socket");
 		close(sock);
 	}
 
@@ -131,8 +177,8 @@ static int connect_socket(lua_State* l) {
 	size_t addrLen;
 	const char* addr = luaL_checklstring(l, 2, &addrLen);
 	struct sockaddr_in rmt_addr;
-	if (read_net_address(addr, &rmt_addr) == -1) {
-		lua_pushinteger(l, -1);
+	if (!read_net_address(addr, &rmt_addr)) {
+		lua_pushinteger(l, 0);
 	}
 
 	st_utime_t timeout = ST_UTIME_NO_TIMEOUT;
@@ -143,24 +189,12 @@ static int connect_socket(lua_State* l) {
 
 	if (st_connect(sock, (struct sockaddr *) &rmt_addr, sizeof(rmt_addr), timeout) < 0) {
 		st_netfd_close(sock);
-		lua_pushinteger(l, -1);
-//		lua_pushstring(l, getLastErrorText());
-	} else {
 		lua_pushinteger(l, 0);
+	} else {
+		lua_pushinteger(l, 1);
 	}
 	return 1;
 }
-
-//static int getreadable(_st_netfd_t * netfd1) {
-//	int n = 0;
-//	while (1) {
-//		ioctl(netfd1->osfd, FIONREAD, &n);
-////		if (ioctl(netfd1.osfd, FIONREAD, &n) == -1 || n == 0) {
-////		}
-//		printf("############# %d \n", n);
-//		sleep(1);
-//	}
-//}
 
 
 static int read_socket(lua_State* l) {

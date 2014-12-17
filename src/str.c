@@ -119,6 +119,21 @@ char *str_vcat(const char *s, va_list ap) {
 	return buf;
 }
 
+char* str_trim(char* str) {
+	char *start=NULL, *end=NULL;
+	if(str==NULL) return NULL;
+
+	while( IS_SPACE(*str) ) str++;
+
+	for(start=str;(*str)!='\0';++str) {
+		if ( !IS_SPACE(*str) )
+			end=str;
+	}
+	if(end)  *(end+1) = '\0';
+	return start;
+}
+
+
 int str_parseInt(const char *s) {
 	if (STR_UNDEF(s))
 		THROW(sys_exception, "NumberFormatException: For input string null");

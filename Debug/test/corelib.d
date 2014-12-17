@@ -1,6 +1,7 @@
 test/corelib.d: ../test/corelib.c ../test/crypto_test.h \
  ../test/core_test.h /home/blc/c/score/include/exception/exception.h \
  /home/blc/c/score/include/logger.h /home/blc/c/score/include/utils.h \
+ /home/blc/c/score/include/mem.h /home/blc/c/score/include/str.h \
  /home/blc/c/score/libs/lua.h /home/blc/c/score/libs/luaconf.h \
  /home/blc/c/score/include/luaapi/luautils.h \
  /home/blc/c/score/include/luaapi/luast.h \
@@ -19,6 +20,10 @@ test/corelib.d: ../test/corelib.c ../test/crypto_test.h \
 /home/blc/c/score/include/logger.h:
 
 /home/blc/c/score/include/utils.h:
+
+/home/blc/c/score/include/mem.h:
+
+/home/blc/c/score/include/str.h:
 
 /home/blc/c/score/libs/lua.h:
 

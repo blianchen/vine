@@ -15,6 +15,8 @@
 #include "core_test.h"
 
 #include <exception/exception.h>
+#include <mem.h>
+#include <str.h>
 
 #include <lua.h>
 
@@ -27,22 +29,66 @@
 #include <stdint.h>
 
 
+typedef struct config_t {
+	char* mainfile;
+	char* mainfun;
+} config_t;
+
+config_t config;
+
 void* startLuaMain(void* arg) {
 	lua_State* ls = arg;
 
-	load_lua_file(ls, "t.lua");		// lua file
+	load_lua_file(ls, config.mainfile);		// lua file
 	call_lua_fun(ls, 0, 0);
-	lua_getglobal(ls, "luafun");	// lua function
+	lua_getglobal(ls, config.mainfun);	// lua function
 	call_lua_fun(ls, 0, 0);
 	return NULL;
 }
 
+void loadconfig() {
+	FILE *cfgFile = fopen("config.ini", "r");
+	if (!cfgFile) {
+		LOG_WARN("****ERROR****:Do not find file config.ini");
+		exit(1);
+		return;
+	}
+	// 分析行
+//#define LOG_CFG_ROW_LEN 256
+	char delims[] = "=";
+	while (!feof(cfgFile)) {
+		char strLine[256];
+		if (!fgets(strLine, 256, cfgFile))
+			break;
+		if (strLine[0] == '#' || str_trim(strLine)[0] == '\0') continue;
+		// 分割'='
+		char *name;
+		char *value;
+		name = str_trim(strtok(strLine, delims));
+		if (!name || strlen(name) == 0) continue;
+		value = str_trim(strtok(NULL, delims));
+		if (!value || strlen(value) == 0) continue;
+		if (strcmp(name, "mainfile") == 0) {
+			config.mainfile = str_dup(value);
+		} else if (strcmp(name, "mainfun") == 0) {
+			config.mainfun = str_dup(value);
+		} else {
+			LOG_DEBUG("Invalid config item(%s) in config.ini", name);
+		}
+	}
+	fclose(cfgFile);
+}
 
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
 
+//	char bbbb[] = {"aa =123  , bb= 4_56 , cc = gh?jkk , "
+//			"kk=vvv"};
+//	kv_option_t op = parse_kv_option(bbbb);
 
 	exception_init();
+
+	loadconfig();
 
 	lua_State* ls = luaL_newstate();
 	open_lua_libs(ls);

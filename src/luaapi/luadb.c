@@ -167,8 +167,7 @@ static int ldb_conn_prepareStatement(lua_State* l) {
 static int ldb_pst_setString(lua_State* l) {
 	dbpst_t pst = lua_touserdata(l, 1);
 	int paramId = luaL_checkinteger(l, 2);
-	size_t len;
-	const char* s = luaL_checklstring(l, 3, &len);
+	const char* s = luaL_checkstring(l, 3);
 	dbpst_setString(pst, paramId, s);
 	return 0;
 }
