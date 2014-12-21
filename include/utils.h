@@ -71,6 +71,10 @@ extern char* getLastErrorText();
 		*bp = '\0'; \
 	} while (0);
 
+
+unsigned int leb2i(unsigned char b[], int len);
+void lei2b(unsigned char b[], int len, unsigned int i);
+
 #ifdef __cplusplus
 }
 #endif

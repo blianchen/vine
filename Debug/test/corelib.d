@@ -9,7 +9,7 @@ test/corelib.d: ../test/corelib.c ../test/crypto_test.h \
  /home/blc/c/score/libs/lualib.h /home/blc/c/score/include/st/st.h \
  /home/blc/c/score/include/luaapi/luadb.h \
  /home/blc/c/score/include/luaapi/luanet.h \
- /home/blc/c/score/include/exception/net_exception.h
+ /home/blc/c/score/include/nets.h
 
 ../test/crypto_test.h:
 
@@ -45,4 +45,4 @@ test/corelib.d: ../test/corelib.c ../test/crypto_test.h \
 
 /home/blc/c/score/include/luaapi/luanet.h:
 
-/home/blc/c/score/include/exception/net_exception.h:
+/home/blc/c/score/include/nets.h:

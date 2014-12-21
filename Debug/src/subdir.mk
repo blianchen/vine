@@ -11,6 +11,7 @@ C_SRCS += \
 ../src/logger.c \
 ../src/md5.c \
 ../src/mem.c \
+../src/nets.c \
 ../src/sha1.c \
 ../src/str.c \
 ../src/strbuffer.c \
@@ -28,6 +29,7 @@ OBJS += \
 ./src/logger.o \
 ./src/md5.o \
 ./src/mem.o \
+./src/nets.o \
 ./src/sha1.o \
 ./src/str.o \
 ./src/strbuffer.o \
@@ -45,6 +47,7 @@ C_DEPS += \
 ./src/logger.d \
 ./src/md5.d \
 ./src/mem.d \
+./src/nets.d \
 ./src/sha1.d \
 ./src/str.d \
 ./src/strbuffer.d \

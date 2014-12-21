@@ -53,7 +53,7 @@ void *mem_malloc(int size, const char *func, const char *file, int line){
 }
 
 
-void *mem_calloc(int count, long size, const char *func, const char *file, int line) {
+void *mem_calloc(int count, int size, const char *func, const char *file, int line) {
 //	assert(count > 0);
 //	assert(size > 0);
 	void *p = calloc(count, size);

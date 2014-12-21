@@ -11,6 +11,7 @@
 #include <mem.h>
 #include <exception/st_exception.h>
 #include <logger.h>
+#include <luaapi/luautils.h>
 
 #include <luaapi/luast.h>
 

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include <mem.h>
+#include <putget.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -26,11 +27,11 @@ void clean_kv_option(kv_option_t *kv) {
 	if (*kv == NULL) return;
 	kv_option_t kv1, kv2;
 	kv1 = *kv;
-	kv2 = kv1.next;
+	kv2 = kv1->next;
 	FREE(kv1);
 	while (kv2) {
 		kv1 = kv2;
-		kv2 = kv1.next;
+		kv2 = kv1->next;
 		FREE(kv1);
 	}
 }
@@ -153,6 +154,35 @@ void hexStrToByte(const char* source, int sourceLen, unsigned char* dest) {
 
         dest[i / 2] = (highByte << 4) | lowByte;
     }
+}
+
+
+unsigned int leb2i(unsigned char b[], int len) {
+	switch (len) {
+	case 1:
+		return get8(b);
+	case 2:
+		return get16le(b);
+	case 4:
+		return get32le(b);
+	}
+	return 0;
+}
+
+void lei2b(unsigned char b[], int len, unsigned int i) {
+	switch (len) {
+	case 1:
+		put8(b, i);
+		break;
+	case 2:
+		put16le(b, i);
+		break;
+	case 4:
+		put32le(b, i);
+		break;
+	default:
+		break;
+	}
 }
 
 #endif

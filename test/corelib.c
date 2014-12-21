@@ -28,6 +28,7 @@
 #include <st/st.h>
 #include <stdint.h>
 
+#include <nets.h>
 
 typedef struct config_t {
 	char* mainfile;
@@ -81,6 +82,9 @@ void loadconfig() {
 
 int main(void) {
 	puts("!!!!!!!!!!!!!!!!! UNIT TEST !!!!!!!!!!!!!!!!!!!!"); /* prints !!!Hello World!!! */
+
+
+
 
 //	char bbbb[] = {"aa =123  , bb= 4_56 , cc = gh?jkk , "
 //			"kk=vvv"};

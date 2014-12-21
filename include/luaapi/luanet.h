@@ -2,18 +2,10 @@
 #ifndef _LUA_NET_H_
 #define _LUA_NET_H_
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-
-#include <arpa/inet.h>
-
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include <exception/net_exception.h>
-#include <st/st.h>
 
 #define LUA_NET_LIB_NAME "net"
 

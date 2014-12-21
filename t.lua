@@ -26,32 +26,37 @@ resp = "HTTP/1.0 200 OK\r\nContent-type: text/html\r\nConnection: close\r\n\r\n<
 function process_session(clisock)
 --	while (true) do
 	local n, s = net.read(clisock);
+	print("---------read from socket byte n==" .. (n) .. ", s=" .. s)
 	net.write(clisock, resp);
 	net.close(clisock);
 --	print("---------read from socket byte n==, " .. (n) .. "sss==" .. s)
 --	end
 end
 
-
-
 function servsock()
-	local srvsock = net.server_socket("", 10001);
+	local srvsock = net.listen(10011, nil, "reuseaddr=true,package=2");
+--	local srvsock = net.listen(10011, nil, nil);
 	while(true) do
 		local clisock = net.accept(srvsock);
+		
+--		print("--------- socket ip=" .. net.getraddr(clisock))
 
+		print("-------------create session thread start.....");
 		local player = st.create_thread(process_session);
+--		 print(debug.traceback())  
 		st.run_thread(player, clisock);
-	--	print("-------------create session thread.....");
+		print("-------------create session thread end.....");
 	end
+	net.close(srvsock);
 end
 
 
 function sockcon()
-	local sock = net.socket();
-	net.connect(sock, "127.0.0.1:6379");
+	local sock = net.connect("192.168.0.101:10000", "reuseaddr=true,package=2");
 	local n,s = net.read(sock);
-	print("---------read from socket byte n==, " .. (n) .. "sss==" .. s);
+	print("---------read from socket byte n==" .. (n) .. ", sss==" .. s);
 	net.write(sock, "test haha!");
+	net.close(sock);
 end
 
 function dbtest1(i)
@@ -85,7 +90,7 @@ end
 function luafun()
 	print("---------lua luafun start !!");
 
-	local cos = {};
+	cos = {};
 
 --	dbpool = db.newPool("postgresql://dbuser:dbuser@127.0.0.1:5432/test?application-name=corelib");
 	dbpool = db.newPool("redis://dbuser:dbuser@127.0.0.1:6379/");
@@ -95,9 +100,9 @@ function luafun()
 	--db.start(dbpool);
 
 	print("time11111===" .. string.format("%d", st.mstime()))
-	for i=1,19 do
+	for i=1,1 do
 		--print("---------create_thread " .. i);
-		cos[i] = st.create_thread(dbtest1);
+		cos[i] = st.create_thread(sockcon);
 	end
 	--cos[5] = st.create_thread(dbtest1);
 	--cos[6] = st.create_thread(dbtest2);
@@ -105,7 +110,7 @@ function luafun()
 
 
 	print("time33333===" .. string.format("%d", st.mstime()))
-	for i=1,19 do
+	for i=1,1 do
 		st.run_thread(cos[i], i);
 	end
 

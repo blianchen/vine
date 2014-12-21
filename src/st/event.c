@@ -1281,12 +1281,6 @@ ST_HIDDEN void _st_epoll_dispatch(void)
             if (_ST_EPOLL_REVENTS(osfd) & (EPOLLERR | EPOLLHUP)) {
                 /* Also set I/O bits on error */
                 _ST_EPOLL_REVENTS(osfd) |= _ST_EPOLL_EVENTS(osfd);
-
-                ////////////////////////////////////////////////////////////
-//                			int optval;
-//                               int optlen = sizeof(int);
-//                            getsockopt(osfd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
-//                            printf("----%s----\n", strerror(optval));
             }
         }
 
