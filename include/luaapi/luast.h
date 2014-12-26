@@ -19,7 +19,7 @@
 #define offsetof(type, identifier) ((size_t)&(((type *)0)->identifier))
 #endif
 
-#define LUA_ST_LIB_NAME "st"
+#define LUA_ST_LIBNAME "st"
 
 //// lua线程表在全局环境中的索引
 extern char LUA_THREAD_GLOBAL_IDX;

@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include <str.h>
 #include <mem.h>
 #include <putget.h>
 

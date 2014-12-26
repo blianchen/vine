@@ -71,29 +71,29 @@ authority:
          auth       
          {
                 *(YYCURSOR - 1) = 0;
-                U->user = YYTOKEN;
+                U->user = (char*)YYTOKEN;
                 char *p = strchr(U->user, ':');
                 if (p) {
                         *(p++) = 0;
-                        U->password = uri_unescape(p);
+                        U->password = uri_unescape((unsigned char*)p);
                 }
-                uri_unescape(U->user);
+                uri_unescape((unsigned char*)U->user);
                 goto authority;
          }
          host6
          {
                 U->ip6 = 1;
-                U->host = str_ndup(YYTOKEN + 1, (int)(YYCURSOR - YYTOKEN - 2));
+                U->host = str_ndup((const char*)YYTOKEN + 1, (int)(YYCURSOR - YYTOKEN - 2));
                 goto authority;
          }
          host
          {
-                U->host = str_ndup(YYTOKEN, (int)(YYCURSOR - YYTOKEN));
+                U->host = str_ndup((const char*)YYTOKEN, (int)(YYCURSOR - YYTOKEN));
                 goto authority;
          }
          port
          {
-                U->portStr = YYTOKEN + 1; // read past ':'
+                U->portStr = (char*)YYTOKEN + 1; // read past ':'
                 U->port = str_parseInt(U->portStr);
                 goto authority;
          }
@@ -122,7 +122,7 @@ query:
          query      
          {
                 *YYCURSOR = 0;
-                U->query = str_ndup(YYTOKEN, (int)(YYCURSOR - YYTOKEN));
+                U->query = str_ndup((const char*)YYTOKEN, (int)(YYCURSOR - YYTOKEN));
                 YYCURSOR = YYTOKEN; // backtrack to start of query string after terminating it and
                 goto params;
          }
@@ -139,7 +139,7 @@ params:
          parameterkey/[=] 
          {
                 NEW(param);
-                param->name = YYTOKEN;
+                param->name = (char*)YYTOKEN;
                 param->next = U->params;
                 U->params = param;
                 goto params;

@@ -10,6 +10,7 @@
 
 #include <logger.h>
 #include <mem.h>
+#include <str.h>
 #include <timeutil.h>
 
 #include "../dbrs_delegate.h"

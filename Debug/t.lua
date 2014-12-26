@@ -95,3 +95,7 @@ cos[6] = st.create_thread(dbtest2);
 --	st.stop_thread();
 	print("---------lua luafun end !!");
 end
+
+
+
+luafun();

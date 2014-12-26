@@ -70,7 +70,7 @@ static int lnets_read(lua_State* l) {
 static int lnets_write(lua_State* l) {
 	socket_t sock = lua_touserdata(l, 1);
 	size_t size;
-	const char* buf = luaL_checklstring(l, 2, &size);
+	char* buf = (char*)luaL_checklstring(l, 2, &size);
 
 	int rn = nets_write(sock, buf, size);
 
@@ -103,6 +103,6 @@ static const luaL_Reg funs[] = {
 };
 
 LUA_API int luaopen_netlib(lua_State* l) {
-	luaL_register(l, LUA_NET_LIB_NAME, funs);
+	luaL_register(l, LUA_NET_LIBNAME, funs);
 	return 1;
 }

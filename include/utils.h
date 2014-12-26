@@ -15,7 +15,7 @@ typedef struct kv_option {
 	struct kv_option *next;
 } *kv_option_t;
 
-kv_option_t parse_kv_option(char *option);
+kv_option_t parse_kv_option(const char *option);
 void clean_kv_option(kv_option_t *kv);
 
 

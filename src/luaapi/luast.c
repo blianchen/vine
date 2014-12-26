@@ -121,7 +121,7 @@ static const luaL_Reg funs[] = {
 };
 
 LUA_API int luaopen_stlib(lua_State* l) {
-	luaL_register(l, LUA_ST_LIB_NAME, funs);
+	luaL_register(l, LUA_ST_LIBNAME, funs);
 	return 1;
 }
 

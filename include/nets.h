@@ -25,11 +25,11 @@ typedef struct socket_s {
 } *socket_t;
 
 
-socket_t nets_listen(int port, char* host, char* options);
+socket_t nets_listen(int port, const char* host, const char* options);
 
 socket_t nets_accept(socket_t serverSocket);
 
-socket_t nets_connect(char* addr, char* options);
+socket_t nets_connect(const char* addr, const char* options);
 
 int nets_read(socket_t soc);
 

@@ -1,5 +1,5 @@
 
-kv_option_t parse_kv_option(char *option) {
+kv_option_t parse_kv_option(const char *option) {
 	char *s = str_dup(option);
 	kv_option_t param = NULL;
 	kv_option_t nextParam = NULL;

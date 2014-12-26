@@ -72,7 +72,7 @@ static int read_ip_address(const char* host, struct sockaddr_in *sin) {
 	return 1;
 }
 
-socket_t nets_listen(int port, char* host, char* options) {
+socket_t nets_listen(int port, const char* host, const char* options) {
 	int sockfd;
 	if ((sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		THROW(net_exception, "Create socket error: %s(errno: %d)", getLastErrorText(), getLastError());
@@ -168,7 +168,7 @@ socket_t nets_accept(socket_t serverSocket) {
 	return clientSocket;
 }
 
-socket_t nets_connect(char* addr, char* options) {
+socket_t nets_connect(const char* addr, const char* options) {
 	struct sockaddr_in rmt_addr;
 	if (!read_net_address(addr, &rmt_addr)) {
 		return NULL;

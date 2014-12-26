@@ -19,7 +19,8 @@ C_SRCS += \
 ../src/timeutil.c \
 ../src/uri.c \
 ../src/utils.c \
-../src/vector.c 
+../src/vector.c \
+../src/vine.c 
 
 OBJS += \
 ./src/base64.o \
@@ -37,7 +38,8 @@ OBJS += \
 ./src/timeutil.o \
 ./src/uri.o \
 ./src/utils.o \
-./src/vector.o 
+./src/vector.o \
+./src/vine.o 
 
 C_DEPS += \
 ./src/base64.d \
@@ -55,14 +57,15 @@ C_DEPS += \
 ./src/timeutil.d \
 ./src/uri.d \
 ./src/utils.d \
-./src/vector.d 
+./src/vector.d \
+./src/vine.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
 src/%.o: ../src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -DLINUX -DMD_HAVE_EPOLL -I"/home/blc/c/score/include" -I"/home/blc/c/score/libs" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -DLINUX -DMD_HAVE_EPOLL -Dlua_c -I"/home/blc/c/score/include" -I"/home/blc/c/score/libs" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

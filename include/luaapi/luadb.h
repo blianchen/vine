@@ -11,7 +11,7 @@
 #include <hiredis/hiredis.h>
 //#include <hiredis/async.h>
 
-#define LUA_DB_LIB_NAME "db"
+#define LUA_DB_LIBNAME "db"
 
 LUA_API int luaopen_dblib(lua_State* l);
 
