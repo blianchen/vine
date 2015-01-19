@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 	s->argc = argc;
 	s->argv = argv;
 	s->main_l = ls;
-	st_thread_create(lua_pmain, s, 0);
+	st_thread_create(lua_pmain, s, 0, 0);
 
 	st_thread_exit(NULL);
 

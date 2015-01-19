@@ -19,6 +19,8 @@
 #define offsetof(type, identifier) ((size_t)&(((type *)0)->identifier))
 #endif
 
+#define ST_THREAD_STACK_SIZE (16*1024)
+
 #define LUA_ST_LIBNAME "st"
 
 //// lua线程表在全局环境中的索引

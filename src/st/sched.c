@@ -1,43 +1,3 @@
-/* 
- * The contents of this file are subject to the Mozilla Public
- * License Version 1.1 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of
- * the License at http://www.mozilla.org/MPL/
- * 
- * Software distributed under the License is distributed on an "AS
- * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * rights and limitations under the License.
- * 
- * The Original Code is the Netscape Portable Runtime library.
- * 
- * The Initial Developer of the Original Code is Netscape
- * Communications Corporation.  Portions created by Netscape are 
- * Copyright (C) 1994-2000 Netscape Communications Corporation.  All
- * Rights Reserved.
- * 
- * Contributor(s):  Silicon Graphics, Inc.
- * 
- * Portions created by SGI are Copyright (C) 2000-2001 Silicon
- * Graphics, Inc.  All Rights Reserved.
- * 
- * Alternatively, the contents of this file may be used under the
- * terms of the GNU General Public License Version 2 or later (the
- * "GPL"), in which case the provisions of the GPL are applicable 
- * instead of those above.  If you wish to allow use of your 
- * version of this file only under the terms of the GPL and not to
- * allow others to use your version of this file under the MPL,
- * indicate your decision by deleting the provisions above and
- * replace them with the notice and other provisions required by
- * the GPL.  If you do not delete the provisions above, a recipient
- * may use your version of this file under either the MPL or the
- * GPL.
- */
-
-/*
- * This file is derived directly from Netscape Communications Corporation,
- * and consists of extensive modifications made during the year(s) 1999-2000.
- */
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -140,7 +100,6 @@ int st_init(void)
     return 0;
   }
 
-  st_set_eventsys(ST_EVENTSYS_POLL);
   /* We can ignore return value here */
   st_set_eventsys(ST_EVENTSYS_DEFAULT);
 
@@ -165,7 +124,8 @@ int st_init(void)
   /*
    * Create idle thread
    */
-  _st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start, NULL, 0);
+  _st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start,
+					     NULL, 0, 0);
   if (!_st_this_vp.idle_thread)
     return -1;
   _st_this_vp.idle_thread->flags = _ST_FL_IDLE_THREAD;
@@ -175,10 +135,8 @@ int st_init(void)
   /*
    * Initialize primordial thread
    */
-  thread = (_st_thread_t *) calloc(1, sizeof(_st_thread_t) +
-				   (ST_KEYS_MAX * sizeof(void *)));
-  if (!thread)
-    return -1;
+  thread = (_st_thread_t *) calloc(1, sizeof(_st_thread_t) + (ST_KEYS_MAX * sizeof(void *)));
+  if (!thread) return -1;
   thread->private_data = (void **) (thread + 1);
   thread->state = _ST_ST_RUNNING;
   thread->flags = _ST_FL_PRIMORDIAL;
@@ -216,12 +174,10 @@ st_switch_cb_t st_set_switch_out_cb(st_switch_cb_t cb)
 void *_st_idle_thread_start(void *arg)
 {
   _st_thread_t *me = _ST_CURRENT_THREAD();
-//  printf("@@@@@@ _st_idle_thread_start thread %lld , _st_active_count=%d\n", me, _st_active_count);
+
   while (_st_active_count > 0) {
     /* Idle vp till I/O is ready or the smallest timeout expired */
     _ST_VP_IDLE();
-
-//    printf("***** _st_idle_thread_start thread %lld , _st_active_count=%d\n", me, _st_active_count);
 
     /* Check sleep queue for expired threads */
     _st_vp_check_clock();
@@ -245,6 +201,21 @@ void st_thread_exit(void *retval)
   thread->retval = retval;
   _st_thread_cleanup(thread);
   _st_active_count--;
+  if (thread->term) {
+    /* Put thread on the zombie queue */
+    thread->state = _ST_ST_ZOMBIE;
+    _ST_ADD_ZOMBIEQ(thread);
+
+    /* Notify on our termination condition variable */
+    st_cond_signal(thread->term);
+
+    /* Switch context and come back later */
+    _ST_SWITCH_CONTEXT(thread);
+
+    /* Continue the cleanup */
+    st_cond_destroy(thread->term);
+    thread->term = NULL;
+  }
 
 #ifdef DEBUG
   _ST_DEL_THREADQ(thread);
@@ -258,6 +229,45 @@ void st_thread_exit(void *retval)
   /* Not going to land here */
 }
 
+
+int st_thread_join(_st_thread_t *thread, void **retvalp)
+{
+  _st_cond_t *term = thread->term;
+
+  /* Can't join a non-joinable thread */
+  if (term == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+  if (_ST_CURRENT_THREAD() == thread) {
+    errno = EDEADLK;
+    return -1;
+  }
+
+  /* Multiple threads can't wait on the same joinable thread */
+  if (term->wait_q.next != &term->wait_q) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  while (thread->state != _ST_ST_ZOMBIE) {
+    if (st_cond_timedwait(term, ST_UTIME_NO_TIMEOUT) != 0)
+      return -1;
+  }
+
+  if (retvalp)
+    *retvalp = thread->retval;
+
+  /*
+   * Remove target thread from the zombie queue and make it runnable.
+   * When it gets scheduled later, it will do the clean up.
+   */
+  thread->state = _ST_ST_RUNNABLE;
+  _ST_DEL_ZOMBIEQ(thread);
+  _ST_ADD_RUNQ(thread);
+
+  return 0;
+}
 
 
 void _st_thread_main(void)
@@ -415,9 +425,10 @@ void _st_del_sleep_q(_st_thread_t *thread)
 void _st_vp_check_clock(void)
 {
   _st_thread_t *thread;
-  st_utime_t now;
+  st_utime_t elapsed, now;
  
   now = st_utime();
+  elapsed = now - _ST_LAST_CLOCK;
   _ST_LAST_CLOCK = now;
 
   if (_st_curr_time && now - _st_last_tset > 999000) {
@@ -431,6 +442,10 @@ void _st_vp_check_clock(void)
     if (thread->due > now)
       break;
     _ST_DEL_SLEEPQ(thread);
+
+    /* If thread is waiting on condition variable, set the time out flag */
+    if (thread->state == _ST_ST_COND_WAIT)
+      thread->flags |= _ST_FL_TIMEDOUT;
 
     /* Make thread runnable */
     ST_ASSERT(!(thread->flags & _ST_FL_IDLE_THREAD));
@@ -460,7 +475,8 @@ void st_thread_interrupt(_st_thread_t *thread)
 }
 
 
-_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_size)
+_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
+			       int joinable, int stk_size)
 {
   _st_thread_t *thread;
   _st_stack_t *stack;
@@ -535,6 +551,15 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_siz
   _ST_INIT_CONTEXT(thread, stack->sp, stack->bsp, _st_thread_main);
 #endif
 
+  /* If thread is joinable, allocate a termination condition variable */
+  if (joinable) {
+    thread->term = st_cond_new();
+    if (thread->term == NULL) {
+      _st_stack_free(thread->stack);
+      return NULL;
+    }
+  }
+
   /* Make thread runnable */
   thread->state = _ST_ST_RUNNABLE;
   _st_active_count++;
@@ -542,8 +567,6 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_siz
 #ifdef DEBUG
   _ST_ADD_THREADQ(thread);
 #endif
-
-//  printf("***** create thread %lld \n", thread);
 
   return thread;
 }

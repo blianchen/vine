@@ -93,7 +93,7 @@ static int thread_run(lua_State* L) {
 	 * stack[nargs+1+2] = thread lua_State ref, use to undef
 	 */
 
-	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0) == NULL) {
+	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0, ST_THREAD_STACK_SIZE) == NULL) {
 		lua_pushinteger(L, -1);
 	} else {
 		lua_pushinteger(L, 0);

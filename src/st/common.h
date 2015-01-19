@@ -1,43 +1,3 @@
-/* 
- * The contents of this file are subject to the Mozilla Public
- * License Version 1.1 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of
- * the License at http://www.mozilla.org/MPL/
- * 
- * Software distributed under the License is distributed on an "AS
- * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * rights and limitations under the License.
- * 
- * The Original Code is the Netscape Portable Runtime library.
- * 
- * The Initial Developer of the Original Code is Netscape
- * Communications Corporation.  Portions created by Netscape are 
- * Copyright (C) 1994-2000 Netscape Communications Corporation.  All
- * Rights Reserved.
- * 
- * Contributor(s):  Silicon Graphics, Inc.
- * 
- * Portions created by SGI are Copyright (C) 2000-2001 Silicon
- * Graphics, Inc.  All Rights Reserved.
- * 
- * Alternatively, the contents of this file may be used under the
- * terms of the GNU General Public License Version 2 or later (the
- * "GPL"), in which case the provisions of the GPL are applicable 
- * instead of those above.  If you wish to allow use of your 
- * version of this file only under the terms of the GPL and not to
- * allow others to use your version of this file under the MPL,
- * indicate your decision by deleting the provisions above and
- * replace them with the notice and other provisions required by
- * the GPL.  If you do not delete the provisions above, a recipient
- * may use your version of this file under either the MPL or the
- * GPL.
- */
-
-/*
- * This file is derived directly from Netscape Communications Corporation,
- * and consists of extensive modifications made during the year(s) 1999-2000.
- */
 
 #ifndef __ST_COMMON_H__
 #define __ST_COMMON_H__
@@ -64,7 +24,7 @@
 #define	ST_HIDDEN   static
 #endif
 
-#include "st/st.h"
+#include <st/st.h>
 #include "md.h"
 
 
@@ -152,6 +112,10 @@ typedef struct _st_stack {
 } _st_stack_t;
 
 
+typedef struct _st_cond {
+  _st_clist_t wait_q;	      /* Condition variable wait queue */
+} _st_cond_t;
+
 
 typedef struct _st_thread _st_thread_t;
 
@@ -166,6 +130,7 @@ struct _st_thread {
   _st_stack_t *stack;	      /* Info about thread's stack */
 
   _st_clist_t links;          /* For putting on run/sleep/zombie queue */
+  _st_clist_t wait_links;     /* For putting on mutex/condvar wait queue */
 #ifdef DEBUG
   _st_clist_t tlink;          /* For putting on thread queue */
 #endif
@@ -177,8 +142,16 @@ struct _st_thread {
 
   void **private_data;        /* Per thread private data */
 
+  _st_cond_t *term;           /* Termination condition variable for join */
+
   jmp_buf context;            /* Thread's context */
 };
+
+
+typedef struct _st_mutex {
+  _st_thread_t *owner;        /* Current mutex owner */
+  _st_clist_t  wait_q;        /* Mutex wait queue */
+} _st_mutex_t;
 
 
 typedef struct _st_pollq {
@@ -292,8 +265,8 @@ extern _st_eventsys_t *_st_eventsys;
 #define _ST_ST_RUNNING      0 
 #define _ST_ST_RUNNABLE     1
 #define _ST_ST_IO_WAIT      2
-//#define _ST_ST_LOCK_WAIT    3
-//#define _ST_ST_COND_WAIT    4
+#define _ST_ST_LOCK_WAIT    3
+#define _ST_ST_COND_WAIT    4
 #define _ST_ST_SLEEPING     5
 #define _ST_ST_ZOMBIE       6
 #define _ST_ST_SUSPENDED    7
@@ -315,6 +288,9 @@ extern _st_eventsys_t *_st_eventsys;
 
 #define _ST_THREAD_PTR(_qp)         \
     ((_st_thread_t *)((char *)(_qp) - offsetof(_st_thread_t, links)))
+
+#define _ST_THREAD_WAITQ_PTR(_qp)   \
+    ((_st_thread_t *)((char *)(_qp) - offsetof(_st_thread_t, wait_links)))
 
 #define _ST_THREAD_STACK_PTR(_qp)   \
     ((_st_stack_t *)((char*)(_qp) - offsetof(_st_stack_t, links)))
@@ -394,9 +370,6 @@ void _st_iterate_threads(void);
     ST_SWITCH_IN_CB(_thread);             \
     ST_END_MACRO
 
-//printf("***** Switch out thread %lld \n", _thread);
-//	printf("***** Switch in thread %lld \n", _thread);
-
 /*
  * Restore a thread context that was saved by _ST_SWITCH_CONTEXT or
  * initialized by _ST_INIT_CONTEXT
@@ -438,11 +411,16 @@ void _st_stack_free(_st_stack_t *ts);
 int _st_io_init(void);
 
 st_utime_t st_utime(void);
+_st_cond_t *st_cond_new(void);
+int st_cond_destroy(_st_cond_t *cvar);
+int st_cond_timedwait(_st_cond_t *cvar, st_utime_t timeout);
+int st_cond_signal(_st_cond_t *cvar);
 ssize_t st_read(_st_netfd_t *fd, void *buf, size_t nbyte, st_utime_t timeout);
 ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte,
 		 st_utime_t timeout);
 int st_poll(struct pollfd *pds, int npds, st_utime_t timeout);
-_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int stk_size);
+_st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
+			      int joinable, int stk_size);
 
 #endif /* !__ST_COMMON_H__ */
 

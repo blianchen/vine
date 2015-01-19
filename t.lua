@@ -27,7 +27,7 @@ function process_session(clisock)
 --	while (true) do
 	local n, s = net.read(clisock);
 	print("---------read from socket byte n==" .. (n) .. ", s=" .. s)
-	net.write(clisock, resp);
+	net.write(clisock, resp); 
 	net.close(clisock);
 --	print("---------read from socket byte n==, " .. (n) .. "sss==" .. s)
 --	end

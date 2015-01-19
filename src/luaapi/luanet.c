@@ -12,7 +12,6 @@
 
 #include <nets.h>
 
-
 static int lnets_listen(lua_State* l) {
 	int port = luaL_checkinteger(l, 1);	//param 1: port
 	const char* host = NULL;
