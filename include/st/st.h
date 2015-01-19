@@ -15,7 +15,7 @@
 #define ST_VERSION_MINOR    9
 
 /* Undefine this to remove the context switch callback feature. */
-#define ST_SWITCH_CB
+//#define ST_SWITCH_CB
 
 #ifndef ETIME
 #define ETIME ETIMEDOUT
