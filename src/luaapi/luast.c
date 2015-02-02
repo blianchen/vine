@@ -101,6 +101,10 @@ static int thread_run(lua_State* L) {
 	return 1;
 }
 
+static int get_tid(lua_State *l) {
+
+}
+
 static int msleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
 	st_usleep(ms * 1000);
@@ -112,11 +116,44 @@ static int mstime(lua_State* l) {
 	return 1;
 }
 
+static int stsend(lua_State *l) {
+	st_tid_t tid = luaL_checknumber(l, 1);
+	size_t len;
+	const char *buf = luaL_checklstring(l, 2, &len);
+
+	st_thread_msg_t msg = st_create_msg(buf, len);
+
+	st_thread_t thread;
+	if (ST_IS_INTERNAL(tid)) {
+		thread = st_get_thread(tid);
+	} else {	// to thread in another node
+		//todo
+	}
+
+	st_send_msg(thread, msg);
+	return 0;
+}
+
+static int strecv(lua_State *l) {
+	st_thread_msg_t msg = st_recv_msg();
+
+	char *buf;
+	int len = st_get_data(msg, &buf);
+
+	lua_pushnumber(l, st_get_fromtid(msg));
+	lua_pushlstring(l, buf, len);
+
+	st_destroy_msg(msg);
+	return 2;
+}
+
 static const luaL_Reg funs[] = {
 		{"create_thread", thread_create},
 		{"run_thread", thread_run},
 		{"msleep", msleep},
 		{"mstime", mstime},
+		{"send", stsend},
+		{"recv", strecv},
 		{NULL, NULL}
 };
 
