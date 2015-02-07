@@ -126,9 +126,9 @@ _st_eventsys_t *_st_eventsys = NULL;
 
 ST_HIDDEN int _st_select_init(void)
 {
-    _st_select_data = (struct _st_seldata *) malloc(sizeof(*_st_select_data));
-    if (!_st_select_data)
-        return -1;
+    _st_select_data = (struct _st_seldata *) MALLOC(sizeof(*_st_select_data));
+//    if (!_st_select_data)
+//        return -1;
 
     memset(_st_select_data, 0, sizeof(*_st_select_data));
     _st_select_data->maxfd = -1;
@@ -385,8 +385,7 @@ ST_HIDDEN int _st_select_fd_new(int osfd)
 
 ST_HIDDEN int _st_select_fd_close(int osfd)
 {
-    if (_ST_SELECT_READ_CNT(osfd) || _ST_SELECT_WRITE_CNT(osfd) ||
-        _ST_SELECT_EXCEP_CNT(osfd)) {
+    if (_ST_SELECT_READ_CNT(osfd) || _ST_SELECT_WRITE_CNT(osfd) || _ST_SELECT_EXCEP_CNT(osfd)) {
         errno = EBUSY;
         return -1;
     }
@@ -419,17 +418,16 @@ static _st_eventsys_t _st_select_eventsys = {
 
 ST_HIDDEN int _st_poll_init(void)
 {
-    _st_poll_data = (struct _st_polldata *) malloc(sizeof(*_st_poll_data));
-    if (!_st_poll_data)
-        return -1;
+    _st_poll_data = (struct _st_polldata *) MALLOC(sizeof(*_st_poll_data));
+//    if (!_st_poll_data)
+//        return -1;
 
-    _ST_POLLFDS = (struct pollfd *) malloc(ST_MIN_POLLFDS_SIZE *
-                                           sizeof(struct pollfd));
-    if (!_ST_POLLFDS) {
-        free(_st_poll_data);
-        _st_poll_data = NULL;
-        return -1;
-    }
+    _ST_POLLFDS = (struct pollfd *) MALLOC(ST_MIN_POLLFDS_SIZE * sizeof(struct pollfd));
+//    if (!_ST_POLLFDS) {
+//        free(_st_poll_data);
+//        _st_poll_data = NULL;
+//        return -1;
+//    }
     _ST_POLLFDS_SIZE = ST_MIN_POLLFDS_SIZE;
     _ST_POLL_OSFD_CNT = 0;
 
@@ -474,10 +472,10 @@ ST_HIDDEN void _st_poll_dispatch(void)
      */
     ST_ASSERT(_ST_POLL_OSFD_CNT >= 0);
     if (_ST_POLL_OSFD_CNT > _ST_POLLFDS_SIZE) {
-        free(_ST_POLLFDS);
-        _ST_POLLFDS = (struct pollfd *) malloc((_ST_POLL_OSFD_CNT + 10) *
+        FREE(_ST_POLLFDS);
+        _ST_POLLFDS = (struct pollfd *) MALLOC((_ST_POLL_OSFD_CNT + 10) *
                                                sizeof(struct pollfd));
-        ST_ASSERT(_ST_POLLFDS != NULL);
+//        ST_ASSERT(_ST_POLLFDS != NULL);
         _ST_POLLFDS_SIZE = _ST_POLL_OSFD_CNT + 10;
     }
     pollfds = _ST_POLLFDS;
@@ -575,9 +573,9 @@ ST_HIDDEN int _st_kq_init(void)
     int err = 0;
     int rv = 0;
 
-    _st_kq_data = (struct _st_kqdata *) calloc(1, sizeof(*_st_kq_data));
-    if (!_st_kq_data)
-        return -1;
+    _st_kq_data = (struct _st_kqdata *) CALLOC(1, sizeof(*_st_kq_data));
+//    if (!_st_kq_data)
+//        return -1;
 
     if ((_st_kq_data->kq = kqueue()) < 0) {
         err = errno;
@@ -592,8 +590,7 @@ ST_HIDDEN int _st_kq_init(void)
      * FD_SETSIZE looks like good initial size.
      */
     _st_kq_data->fd_data_size = FD_SETSIZE;
-    _st_kq_data->fd_data = (_kq_fd_data_t *)calloc(_st_kq_data->fd_data_size,
-                                                   sizeof(_kq_fd_data_t));
+    _st_kq_data->fd_data = (_kq_fd_data_t *)CALLOC(_st_kq_data->fd_data_size, sizeof(_kq_fd_data_t));
     if (!_st_kq_data->fd_data) {
         err = errno;
         rv = -1;
@@ -602,29 +599,26 @@ ST_HIDDEN int _st_kq_init(void)
 
     /* Allocate event lists */
     _st_kq_data->evtlist_size = ST_KQ_MIN_EVTLIST_SIZE;
-    _st_kq_data->evtlist = (struct kevent *)malloc(_st_kq_data->evtlist_size *
-                                                   sizeof(struct kevent));
+    _st_kq_data->evtlist = (struct kevent *)MALLOC(_st_kq_data->evtlist_size * sizeof(struct kevent));
     _st_kq_data->addlist_size = ST_KQ_MIN_EVTLIST_SIZE;
-    _st_kq_data->addlist = (struct kevent *)malloc(_st_kq_data->addlist_size *
-                                                   sizeof(struct kevent));
+    _st_kq_data->addlist = (struct kevent *)MALLOC(_st_kq_data->addlist_size * sizeof(struct kevent));
     _st_kq_data->dellist_size = ST_KQ_MIN_EVTLIST_SIZE;
-    _st_kq_data->dellist = (struct kevent *)malloc(_st_kq_data->dellist_size *
-                                                   sizeof(struct kevent));
-    if (!_st_kq_data->evtlist || !_st_kq_data->addlist ||
-        !_st_kq_data->dellist) {
-        err = ENOMEM;
-        rv = -1;
-    }
+    _st_kq_data->dellist = (struct kevent *)MALLOC(_st_kq_data->dellist_size * sizeof(struct kevent));
+//    if (!_st_kq_data->evtlist || !_st_kq_data->addlist ||
+//        !_st_kq_data->dellist) {
+//        err = ENOMEM;
+//        rv = -1;
+//    }
 
  cleanup_kq:
     if (rv < 0) {
         if (_st_kq_data->kq >= 0)
             close(_st_kq_data->kq);
-        free(_st_kq_data->fd_data);
-        free(_st_kq_data->evtlist);
-        free(_st_kq_data->addlist);
-        free(_st_kq_data->dellist);
-        free(_st_kq_data);
+        FREE(_st_kq_data->fd_data);
+        FREE(_st_kq_data->evtlist);
+        FREE(_st_kq_data->addlist);
+        FREE(_st_kq_data->dellist);
+        FREE(_st_kq_data);
         _st_kq_data = NULL;
         errno = err;
     }
@@ -640,10 +634,9 @@ ST_HIDDEN int _st_kq_fd_data_expand(int maxfd)
     while (maxfd >= n)
         n <<= 1;
 
-    ptr = (_kq_fd_data_t *)realloc(_st_kq_data->fd_data,
-                                   n * sizeof(_kq_fd_data_t));
-    if (!ptr)
-        return -1;
+    ptr = (_kq_fd_data_t *)REALLOC(_st_kq_data->fd_data, n * sizeof(_kq_fd_data_t));
+//    if (!ptr)
+//        return -1;
 
     memset(ptr + _st_kq_data->fd_data_size, 0,
            (n - _st_kq_data->fd_data_size) * sizeof(_kq_fd_data_t));
@@ -662,7 +655,7 @@ ST_HIDDEN int _st_kq_addlist_expand(int avail)
     while (avail > n - _st_kq_data->addlist_cnt)
         n <<= 1;
 
-    ptr = (struct kevent *)realloc(_st_kq_data->addlist,
+    ptr = (struct kevent *)REALLOC(_st_kq_data->addlist,
                                    n * sizeof(struct kevent));
     if (!ptr)
         return -1;
@@ -674,7 +667,7 @@ ST_HIDDEN int _st_kq_addlist_expand(int avail)
      * Try to expand the result event list too
      * (although we don't have to do it).
      */
-    ptr = (struct kevent *)realloc(_st_kq_data->evtlist,
+    ptr = (struct kevent *)REALLOC(_st_kq_data->evtlist,
                                    n * sizeof(struct kevent));
     if (ptr) {
         _st_kq_data->evtlist = ptr;
@@ -700,7 +693,7 @@ ST_HIDDEN void _st_kq_dellist_add(const struct kevent *kev)
         struct kevent *ptr;
 
         n <<= 1;
-        ptr = (struct kevent *)realloc(_st_kq_data->dellist,
+        ptr = (struct kevent *)REALLOC(_st_kq_data->dellist,
                                        n * sizeof(struct kevent));
         if (!ptr) {
             /* See comment in _st_kq_pollset_del() */
@@ -1003,10 +996,9 @@ ST_HIDDEN int _st_epoll_init(void)
     int err = 0;
     int rv = 0;
 
-    _st_epoll_data =
-        (struct _st_epolldata *) calloc(1, sizeof(*_st_epoll_data));
-    if (!_st_epoll_data)
-        return -1;
+    _st_epoll_data = (struct _st_epolldata *) CALLOC(1, sizeof(*_st_epoll_data));
+//    if (!_st_epoll_data)
+//        return -1;
 
     fdlim = st_getfdlimit();
     _st_epoll_data->fd_hint = (fdlim > 0 && fdlim < ST_EPOLL_EVTLIST_SIZE) ?
@@ -1023,8 +1015,7 @@ ST_HIDDEN int _st_epoll_init(void)
     /* Allocate file descriptor data array */
     _st_epoll_data->fd_data_size = _st_epoll_data->fd_hint;
     _st_epoll_data->fd_data =
-        (_epoll_fd_data_t *)calloc(_st_epoll_data->fd_data_size,
-                                   sizeof(_epoll_fd_data_t));
+        (_epoll_fd_data_t *)CALLOC(_st_epoll_data->fd_data_size, sizeof(_epoll_fd_data_t));
     if (!_st_epoll_data->fd_data) {
         err = errno;
         rv = -1;
@@ -1034,20 +1025,19 @@ ST_HIDDEN int _st_epoll_init(void)
     /* Allocate event lists */
     _st_epoll_data->evtlist_size = _st_epoll_data->fd_hint;
     _st_epoll_data->evtlist =
-        (struct epoll_event *)malloc(_st_epoll_data->evtlist_size *
-                                     sizeof(struct epoll_event));
-    if (!_st_epoll_data->evtlist) {
-        err = errno;
-        rv = -1;
-    }
+        (struct epoll_event *)MALLOC(_st_epoll_data->evtlist_size * sizeof(struct epoll_event));
+//    if (!_st_epoll_data->evtlist) {
+//        err = errno;
+//        rv = -1;
+//    }
 
  cleanup_epoll:
     if (rv < 0) {
         if (_st_epoll_data->epfd >= 0)
             close(_st_epoll_data->epfd);
-        free(_st_epoll_data->fd_data);
-        free(_st_epoll_data->evtlist);
-        free(_st_epoll_data);
+        FREE(_st_epoll_data->fd_data);
+        FREE(_st_epoll_data->evtlist);
+        FREE(_st_epoll_data);
         _st_epoll_data = NULL;
         errno = err;
     }
@@ -1063,10 +1053,9 @@ ST_HIDDEN int _st_epoll_fd_data_expand(int maxfd)
     while (maxfd >= n)
         n <<= 1;
 
-    ptr = (_epoll_fd_data_t *)realloc(_st_epoll_data->fd_data,
-                                      n * sizeof(_epoll_fd_data_t));
-    if (!ptr)
-        return -1;
+    ptr = (_epoll_fd_data_t *)REALLOC(_st_epoll_data->fd_data, n * sizeof(_epoll_fd_data_t));
+//    if (!ptr)
+//        return -1;
 
     memset(ptr + _st_epoll_data->fd_data_size, 0,
            (n - _st_epoll_data->fd_data_size) * sizeof(_epoll_fd_data_t));
@@ -1085,8 +1074,7 @@ ST_HIDDEN void _st_epoll_evtlist_expand(void)
     while (_st_epoll_data->evtlist_cnt > n)
         n <<= 1;
 
-    ptr = (struct epoll_event *)realloc(_st_epoll_data->evtlist,
-                                        n * sizeof(struct epoll_event));
+    ptr = (struct epoll_event *)REALLOC(_st_epoll_data->evtlist, n * sizeof(struct epoll_event));
     if (ptr) {
         _st_epoll_data->evtlist = ptr;
         _st_epoll_data->evtlist_size = n;

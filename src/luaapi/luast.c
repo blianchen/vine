@@ -18,6 +18,23 @@
 
 char LUA_THREAD_GLOBAL_IDX;
 
+
+static void* st_thread_callback_fun(void* arg) {
+	lua_State* tl = (lua_State*) arg;
+	int ref = lua_tointeger(tl, -1);
+	int nargs = lua_tointeger(tl, -2);
+	lua_pop(tl, 2);
+
+	call_lua_fun(tl, nargs, 0);
+
+	/* detach coroutine from GLOBAL table */
+	lua_pushlightuserdata(tl, &LUA_THREAD_GLOBAL_IDX);
+	lua_rawget(tl, LUA_GLOBALSINDEX);
+	luaL_unref(tl, -1, ref);
+
+	return NULL;
+}
+
 static int thread_create(lua_State* l) {
 	/* save stack index */
 	int base = lua_gettop(l);
@@ -42,48 +59,15 @@ static int thread_create(lua_State* l) {
 
 	lua_settop(l, base); /* restore main thread stack */
 
-	lua_pushinteger(l, ref);
-	return 1;
-}
-
-static void* st_thread_callback_fun(void* arg) {
-	lua_State* tl = (lua_State*) arg;
-	int ref = lua_tointeger(tl, -1);
-	int nargs = lua_tointeger(tl, -2);
-	lua_pop(tl, 2);
-
-	call_lua_fun(tl, nargs, 0);
-
-	/* detach coroutine from GLOBAL table */
-	lua_pushlightuserdata(tl, &LUA_THREAD_GLOBAL_IDX);
-	lua_rawget(tl, LUA_GLOBALSINDEX);
-	luaL_unref(tl, -1, ref);
-
-	return NULL;
-}
-
-/**
- *
- */
-static int thread_run(lua_State* L) {
-	lua_pushlightuserdata(L, &LUA_THREAD_GLOBAL_IDX);
-	lua_rawget(L, LUA_GLOBALSINDEX);
-	lua_pushvalue(L, 1); /* copy lua_State ref to top */
-	lua_gettable(L, -2);   // get the thread lua_state from table and push to stack top
-
-	lua_State* tl = lua_tothread(L, -1);
-	luaL_argcheck(L, tl, 1, "thread expected");
-
-	lua_pop(L, 1);
 
 	//main function args
-	int nargs = lua_gettop(L) - 1;
-	lua_xmove(L, tl, nargs);
+	int nargs = lua_gettop(l) - 1;
+	lua_xmove(l, tl, nargs);
 	//main function args num
 	lua_pushinteger(tl, nargs);
 	//thread lua_State ref
-	lua_pushvalue(L, 1); /* copy lua_State ref to top */
-	lua_xmove(L, tl, 1);
+	lua_pushvalue(l, 1); /* copy lua_State ref to top */
+	lua_xmove(l, tl, 1);
 
 	/**
 	 * tl stack
@@ -93,48 +77,62 @@ static int thread_run(lua_State* L) {
 	 * stack[nargs+1+2] = thread lua_State ref, use to undef
 	 */
 
-	if (st_thread_create(st_thread_callback_fun, (void*) tl, 0, ST_THREAD_STACK_SIZE) == NULL) {
-		lua_pushinteger(L, -1);
-	} else {
-		lua_pushinteger(L, 0);
+	st_thread_t thread = st_thread_create(st_thread_callback_fun, (void*) tl, 0, ST_THREAD_STACK_SIZE);
+	if (thread == NULL) {
+		LOG_WARN("Create thread error.");
+		lua_pushnil(l);
+		return 1;
 	}
+
+	lua_pushlightuserdata(l, thread);
 	return 1;
 }
 
 static int get_tid(lua_State *l) {
-
+	st_thread_t thread;
+	if (lua_gettop(l) == 0) {
+		thread = st_thread_self();
+	} else {
+		thread = lua_touserdata(l, 1);
+	}
+	lua_pushnumber(l, st_get_tid(thread));
+	return 1;
 }
 
-static int msleep(lua_State* l) {
+static int stusleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
-	st_usleep(ms * 1000);
+	st_usleep(ms);
 	return 0;
 }
 
-static int mstime(lua_State* l) {
+static int stustime(lua_State* l) {
 	lua_pushnumber(l, st_utime());
 	return 1;
 }
 
 static int stsend(lua_State *l) {
-	st_tid_t tid = luaL_checknumber(l, 1);
+	st_thread_t thread;
+	if (lua_type(l, 1) == LUA_TLIGHTUSERDATA) {
+		thread = lua_touserdata(l, 1);
+	} else {
+		st_tid_t tid = luaL_checknumber(l, 1);
+		if (ST_IS_INTERNAL(tid)) {
+			thread = st_get_thread(tid);
+		} else {	// to thread in another node
+			//todo
+		}
+	}
+
 	size_t len;
 	const char *buf = luaL_checklstring(l, 2, &len);
 
 	st_thread_msg_t msg = st_create_msg(buf, len);
-
-	st_thread_t thread;
-	if (ST_IS_INTERNAL(tid)) {
-		thread = st_get_thread(tid);
-	} else {	// to thread in another node
-		//todo
-	}
-
 	st_send_msg(thread, msg);
 	return 0;
 }
 
 static int strecv(lua_State *l) {
+	st_thread_t tttt = st_thread_self();
 	st_thread_msg_t msg = st_recv_msg();
 
 	char *buf;
@@ -148,10 +146,11 @@ static int strecv(lua_State *l) {
 }
 
 static const luaL_Reg funs[] = {
-		{"create_thread", thread_create},
-		{"run_thread", thread_run},
-		{"msleep", msleep},
-		{"mstime", mstime},
+		{"spawn", thread_create},
+		{"tid", get_tid},
+//		{"run_thread", thread_run},
+		{"usleep", stusleep},
+		{"ustime", stustime},
 		{"send", stsend},
 		{"recv", strecv},
 		{NULL, NULL}

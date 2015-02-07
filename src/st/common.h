@@ -4,9 +4,12 @@
 
 #include <stddef.h>
 #include <unistd.h>
-#include <sys/types.h>
+//#include <sys/types.h>
 #include <sys/time.h>
 #include <setjmp.h>
+#include <stdint.h>
+
+#include <mem.h>
 
 /* Enable assertions only if DEBUG is defined */
 #ifndef DEBUG
@@ -112,6 +115,23 @@ typedef struct _st_stack {
 } _st_stack_t;
 
 
+
+// thread message and message queue ///// blc add
+typedef struct _st_thread_msg {
+	st_tid_t f_tid;	// from tid
+	int refcnt;
+	int len;
+	char *data;
+} _st_thread_msg_t;
+
+typedef struct _st_thread_msg_queue {
+	struct _st_thread_msg_queue *next;
+	struct _st_thread_msg_queue *prev;
+	struct _st_thread_msg *msg;
+} _st_thread_msg_queue_t;
+
+
+
 typedef struct _st_cond {
   _st_clist_t wait_q;	      /* Condition variable wait queue */
 } _st_cond_t;
@@ -139,6 +159,10 @@ struct _st_thread {
   _st_thread_t *left;         /* For putting in timeout heap */
   _st_thread_t *right;	      /* -- see docs/timeout_heap.txt for details */
   int heap_index;
+
+  // message queue // blc add
+  int sid;			/* thread id */
+  _st_thread_msg_queue_t *msg_q;  /* thread message queue */
 
   void **private_data;        /* Per thread private data */
 
@@ -270,6 +294,7 @@ extern _st_eventsys_t *_st_eventsys;
 #define _ST_ST_SLEEPING     5
 #define _ST_ST_ZOMBIE       6
 #define _ST_ST_SUSPENDED    7
+#define _ST_ST_MSG_WAIT     8
 
 #define _ST_FL_PRIMORDIAL   0x01
 #define _ST_FL_IDLE_THREAD  0x02
@@ -419,6 +444,7 @@ ssize_t st_read(_st_netfd_t *fd, void *buf, size_t nbyte, st_utime_t timeout);
 ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte, st_utime_t timeout);
 int st_poll(struct pollfd *pds, int npds, st_utime_t timeout);
 _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinable, int stk_size);
+
 
 #endif /* !__ST_COMMON_H__ */
 

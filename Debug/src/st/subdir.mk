@@ -9,7 +9,8 @@ C_SRCS += \
 ../src/st/key.c \
 ../src/st/sched.c \
 ../src/st/stk.c \
-../src/st/sync.c 
+../src/st/sync.c \
+../src/st/threadmsg.c 
 
 S_UPPER_SRCS += \
 ../src/st/md.S 
@@ -21,7 +22,8 @@ OBJS += \
 ./src/st/md.o \
 ./src/st/sched.o \
 ./src/st/stk.o \
-./src/st/sync.o 
+./src/st/sync.o \
+./src/st/threadmsg.o 
 
 C_DEPS += \
 ./src/st/event.d \
@@ -29,7 +31,8 @@ C_DEPS += \
 ./src/st/key.d \
 ./src/st/sched.d \
 ./src/st/stk.d \
-./src/st/sync.d 
+./src/st/sync.d \
+./src/st/threadmsg.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

@@ -7,6 +7,10 @@
 #include <errno.h>
 #include "common.h"
 
+#include <intmap.h>
+
+intmap_t *_st_thread_id_map;	/* thread map,  (int)--(_st_thread_t*) */
+int _st_thread_sid = 0;			/* thread sid */
 
 /* Global data */
 _st_vp_t _st_this_vp;           /* This VP */
@@ -15,6 +19,15 @@ int _st_active_count = 0;       /* Active thread count */
 
 time_t _st_curr_time = 0;       /* Current time as returned by time(2) */
 st_utime_t _st_last_tset;       /* Last time it was fetched */
+
+
+_st_thread_t *st_get_thread(st_tid_t tid) {
+	return intmap_get(_st_thread_id_map, ST_SID(tid));
+}
+
+st_tid_t st_get_tid(_st_thread_t *thread) {
+	return ST_MAKE_TID(thread->sid);
+}
 
 
 int st_poll(struct pollfd *pds, int npds, st_utime_t timeout) {
@@ -90,6 +103,9 @@ void _st_vp_schedule(void) {
  * Initialize this Virtual Processor
  */
 int st_init(void) {
+	// id map init
+	_st_thread_id_map = intmap_create(0);
+
 	_st_thread_t *thread;
 
 	if (_st_active_count) {
@@ -121,8 +137,7 @@ int st_init(void) {
 	/*
 	 * Create idle thread
 	 */
-	_st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start,
-	NULL, 0, 0);
+	_st_this_vp.idle_thread = st_thread_create(_st_idle_thread_start, NULL, 0, 0);
 	if (!_st_this_vp.idle_thread)
 		return -1;
 	_st_this_vp.idle_thread->flags = _ST_FL_IDLE_THREAD;
@@ -132,9 +147,9 @@ int st_init(void) {
 	/*
 	 * Initialize primordial thread
 	 */
-	thread = (_st_thread_t *) calloc(1, sizeof(_st_thread_t) + (ST_KEYS_MAX * sizeof(void *)));
-	if (!thread)
-		return -1;
+	thread = (_st_thread_t *) CALLOC(1, sizeof(_st_thread_t) + (ST_KEYS_MAX * sizeof(void *)));
+//	if (!thread)
+//		return -1;
 	thread->private_data = (void **) (thread + 1);
 	thread->state = _ST_ST_RUNNING;
 	thread->flags = _ST_FL_PRIMORDIAL;
@@ -214,6 +229,9 @@ void st_thread_exit(void *retval) {
 #ifdef DEBUG
 	_ST_DEL_THREADQ(thread);
 #endif
+
+	// remove thread from map
+	intmap_remove(_st_thread_id_map, thread->sid);
 
 	if (!(thread->flags & _ST_FL_PRIMORDIAL))
 		_st_stack_free(thread->stack);
@@ -524,6 +542,15 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinabl
 	thread->stack = stack;
 	thread->start = start;
 	thread->arg = arg;
+
+	// thread id
+	_st_thread_msg_queue_t *mq = MALLOC(sizeof(_st_thread_msg_queue_t));
+	mq->msg = NULL;
+	mq->next = mq;
+	mq->prev = mq;
+	thread->msg_q = mq;
+	thread->sid = ++_st_thread_sid;
+	intmap_put(_st_thread_id_map, _st_thread_sid, thread);
 
 #ifndef __ia64__
 	_ST_INIT_CONTEXT(thread, stack->sp, _st_thread_main);

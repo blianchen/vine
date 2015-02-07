@@ -1,5 +1,5 @@
 /*
- * serversocket.c
+ * luanet.c
  *
  *  Created on: Nov 18, 2014
  *      Author: blc
@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <logger.h>
 #include <nets.h>
 
 static int lnets_listen(lua_State* l) {
@@ -59,9 +60,13 @@ static int lnets_read(lua_State* l) {
 	int rn = nets_read(sock);
 
 	lua_pushinteger(l, rn);
-	if (rn < 0)
+	if (rn == 0) {
+		// connect close
+		LOG_DEBUG("connect closed.");
 		lua_pushnil(l);
-	else
+	} else if (rn < 0) {
+		lua_pushnil(l);
+	} else
 		lua_pushlstring(l, sock->buf, rn);
 	return 2;
 }

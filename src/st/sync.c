@@ -19,7 +19,7 @@ static st_utime_t (*_st_utime)(void) = NULL;
 st_utime_t st_utime(void) {
 	if (_st_utime == NULL) {
 #ifdef MD_GET_UTIME
-	MD_GET_UTIME();
+		MD_GET_UTIME();
 #else
 #error Unknown OS
 #endif
@@ -100,10 +100,10 @@ int st_sleep(int secs) {
 _st_cond_t *st_cond_new(void) {
 	_st_cond_t *cvar;
 
-	cvar = (_st_cond_t *) calloc(1, sizeof(_st_cond_t));
-	if (cvar) {
-		ST_INIT_CLIST(&cvar->wait_q);
-	}
+	cvar = (_st_cond_t *) CALLOC(1, sizeof(_st_cond_t));
+//	if (cvar) {
+//		ST_INIT_CLIST(&cvar->wait_q);
+//	}
 
 	return cvar;
 }
@@ -114,7 +114,7 @@ int st_cond_destroy(_st_cond_t *cvar) {
 		return -1;
 	}
 
-	free(cvar);
+	FREE(cvar);
 
 	return 0;
 }
@@ -195,7 +195,7 @@ int st_cond_broadcast(_st_cond_t *cvar) {
 _st_mutex_t *st_mutex_new(void) {
 	_st_mutex_t *lock;
 
-	lock = (_st_mutex_t *) calloc(1, sizeof(_st_mutex_t));
+	lock = (_st_mutex_t *) CALLOC(1, sizeof(_st_mutex_t));
 	if (lock) {
 		ST_INIT_CLIST(&lock->wait_q);
 		lock->owner = NULL;
@@ -210,7 +210,7 @@ int st_mutex_destroy(_st_mutex_t *lock) {
 		return -1;
 	}
 
-	free(lock);
+	FREE(lock);
 
 	return 0;
 }

@@ -84,9 +84,9 @@ static _st_netfd_t *_st_netfd_new(int osfd, int nonblock, int is_socket) {
 		fd = _st_netfd_freelist;
 		_st_netfd_freelist = _st_netfd_freelist->next;
 	} else {
-		fd = calloc(1, sizeof(_st_netfd_t));
-		if (!fd)
-			return NULL;
+		fd = CALLOC(1, sizeof(_st_netfd_t));
+//		if (!fd)
+//			return NULL;
 	}
 
 	fd->osfd = osfd;
@@ -229,10 +229,10 @@ int st_netfd_serialize_accept(_st_netfd_t *fd)
 		errno = EINVAL;
 		return -1;
 	}
-	if ((p = (_st_netfd_t **)calloc(2, sizeof(_st_netfd_t *))) == NULL)
+	if ((p = (_st_netfd_t **)CALLOC(2, sizeof(_st_netfd_t *))) == NULL)
 	return -1;
 	if (pipe(osfd) < 0) {
-		free(p);
+		FREE(p);
 		return -1;
 	}
 	if ((p[0] = st_netfd_open(osfd[0])) != NULL &&
@@ -249,7 +249,7 @@ int st_netfd_serialize_accept(_st_netfd_t *fd)
 	st_netfd_free(p[1]);
 	close(osfd[0]);
 	close(osfd[1]);
-	free(p);
+	FREE(p);
 	errno = err;
 
 	return -1;
@@ -261,7 +261,7 @@ static void _st_netfd_free_aux_data(_st_netfd_t *fd)
 
 	st_netfd_close(p[0]);
 	st_netfd_close(p[1]);
-	free(p);
+	FREE(p);
 	fd->aux_data = NULL;
 }
 
@@ -515,7 +515,7 @@ ssize_t st_writev(_st_netfd_t *fd, const struct iovec *iov, int iov_size, st_uti
 				if (iov_size - index <= _LOCAL_MAXIOV) {
 					tmp_iov = local_iov;
 				} else {
-					tmp_iov = calloc(1, (iov_size - index) * sizeof(struct iovec));
+					tmp_iov = CALLOC(1, (iov_size - index) * sizeof(struct iovec));
 					if (tmp_iov == NULL)
 						return -1;
 				}
@@ -539,7 +539,7 @@ ssize_t st_writev(_st_netfd_t *fd, const struct iovec *iov, int iov_size, st_uti
 	}
 
 	if (tmp_iov != iov && tmp_iov != local_iov)
-		free(tmp_iov);
+		FREE(tmp_iov);
 
 	return rv;
 }

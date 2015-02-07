@@ -8,6 +8,7 @@ C_SRCS += \
 ../src/cJSON.c \
 ../src/exception.c \
 ../src/hashmap.c \
+../src/intmap.c \
 ../src/logger.c \
 ../src/md5.c \
 ../src/mem.c \
@@ -27,6 +28,7 @@ OBJS += \
 ./src/cJSON.o \
 ./src/exception.o \
 ./src/hashmap.o \
+./src/intmap.o \
 ./src/logger.o \
 ./src/md5.o \
 ./src/mem.o \
@@ -46,6 +48,7 @@ C_DEPS += \
 ./src/cJSON.d \
 ./src/exception.d \
 ./src/hashmap.d \
+./src/intmap.d \
 ./src/logger.d \
 ./src/md5.d \
 ./src/mem.d \

@@ -179,10 +179,10 @@ static int _hashmap_rehash(hmap_t in) {
 
 	/* Setup the new elements */
 	hashmap_map_t *m = (hashmap_map_t *) in;
-	hashmap_elem_t *temp = (hashmap_elem_t *) calloc(2 * m->table_size, sizeof(hashmap_elem_t));
-	if (!temp) {
-		return HMAP_E_OUTMEM;
-	}
+	hashmap_elem_t *temp = (hashmap_elem_t *) CALLOC(2 * m->table_size, sizeof(hashmap_elem_t));
+//	if (!temp) {
+//		return HMAP_E_OUTMEM;
+//	}
 
 	/* Update the array */
 	curr = m->elems;
@@ -206,7 +206,7 @@ static int _hashmap_rehash(hmap_t in) {
 		}
 	}
 
-	free(curr);
+	FREE(curr);
 	return HMAP_S_OK;
 }
 
@@ -221,10 +221,10 @@ hmap_t hashmap_create() {
 //	}
 
 	m->elems = (hashmap_elem_t*) CALLOC(HMAP_INITIAL_SIZE, sizeof(hashmap_elem_t));
-	if (!m->elems) {
-		FREE(m);
-		exit(HMAP_E_OUTMEM);
-	}
+//	if (!m->elems) {
+//		FREE(m);
+//		exit(HMAP_E_OUTMEM);
+//	}
 	m->table_size = HMAP_INITIAL_SIZE;
 	m->size = 0;
 	return m;

@@ -6,6 +6,10 @@
 #include <sys/mman.h>
 #include "common.h"
 
+#include <mem.h>
+#include <logger.h>
+#include <utils.h>
+
 
 /* How much space to leave between the stacks, at each end */
 #define REDZONE	_ST_PAGE_SIZE
@@ -34,13 +38,14 @@ _st_stack_t *_st_stack_new(int stack_size) {
 	}
 
 	/* Make a new thread stack object. */
-	if ((ts = (_st_stack_t *) calloc(1, sizeof(_st_stack_t))) == NULL)
-		return NULL;
+	ts = (_st_stack_t *) CALLOC(1, sizeof(_st_stack_t));
+//	if ((ts = (_st_stack_t *) calloc(1, sizeof(_st_stack_t))) == NULL)
+//		return NULL;
 	extra = _st_randomize_stacks ? _ST_PAGE_SIZE : 0;
 	ts->vaddr_size = stack_size + 2 * REDZONE + extra;
 	ts->vaddr = _st_new_stk_segment(ts->vaddr_size);
 	if (!ts->vaddr) {
-		free(ts);
+		FREE(ts);
 		return NULL;
 	}
 	ts->stk_size = stack_size;
@@ -75,10 +80,9 @@ void _st_stack_free(_st_stack_t *ts) {
 	_st_num_free_stacks++;
 }
 
-
 static char *_st_new_stk_segment(int size) {
 #ifdef MALLOC_STACK
-	void *vaddr = malloc(size);
+	void *vaddr = MALLOC(size);
 #else
 	static int zero_fd = -1;
 	int mmap_flags = MAP_PRIVATE;
@@ -97,8 +101,10 @@ static char *_st_new_stk_segment(int size) {
 #endif
 
 	vaddr = mmap(NULL, size, PROT_READ | PROT_WRITE, mmap_flags, zero_fd, 0);
-	if (vaddr == (void *) MAP_FAILED)
+	if (vaddr == (void *) MAP_FAILED) {
+		LOG_WARN("mmap error in stack: %s", getLastErrorText());
 		return NULL;
+	}
 
 #endif /* MALLOC_STACK */
 
@@ -111,7 +117,7 @@ static char *_st_new_stk_segment(int size) {
 void _st_delete_stk_segment(char *vaddr, int size)
 {
 #ifdef MALLOC_STACK
-	free(vaddr);
+	FREE(vaddr);
 #else
 	(void) munmap(vaddr, size);
 #endif

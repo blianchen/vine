@@ -243,8 +243,8 @@ int nets_read(socket_t soc) {
 		while (rn < soc->package) {
 			unread = soc->package - rn;
 			n = st_read(soc->nfd, hb+rn, unread, soc->timeout);
-			if (n < 0) { // read error
-				return -1;
+			if (n <= 0) { // read error
+				return n;
 			}
 			rn = rn + n;
 		}
@@ -257,8 +257,8 @@ int nets_read(socket_t soc) {
 		while (rn < headerLen) {
 			unread = headerLen - rn;
 			n = st_read(soc->nfd, soc->buf+rn, unread, soc->timeout);
-			if (n < 0) { // read error
-				return -1;
+			if (n <= 0) { // read error
+				return n;
 			}
 			rn = rn + n;
 		}

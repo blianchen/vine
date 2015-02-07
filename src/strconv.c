@@ -111,6 +111,6 @@ size_t strconv(char_conv_t* convt, const char *instr, char *outstr, int outlen) 
 }
 
 void strconv_close(char_conv_t* convt) {
-	free(convt);
+	FREE(convt);
 	convt = NULL;
 }

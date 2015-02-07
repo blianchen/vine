@@ -6,17 +6,17 @@ end
 
 function threadStart(i, j, s)
 	print("---------in lua threadStart " .. i .. "**" .. j .. "**" .. s);
-	--st.create_thread(secondthread);
+	--st.spawn(secondthread);
 end
 
 local llcc;
 
 function do_calc(cn) 
-	local j = 1;
+	local j = 3;
 	while j>0 do
-		print("---------in do_calc start ==== llcc " .. (cn) .. " ttt=" .. string.format("%d", st.mstime()));
-		st.msleep(cn*1);
-		print("---------in do_calc end " .. (cn) .. " ttt=" .. string.format("%d", st.mstime()));
+		print("---------in do_calc start ==== llcc " .. (cn) .. " ttt=" .. string.format("%d", st.ustime()));
+		st.usleep(cn*1000);
+		print("---------in do_calc end " .. (cn) .. " ttt=" .. string.format("%d", st.ustime()));
 		j = j - 1;
 	end
 end
@@ -29,7 +29,7 @@ function process_session(clisock)
 	print("---------read from socket byte n==" .. (n) .. ", s=" .. s)
 	net.write(clisock, resp); 
 	net.close(clisock);
---	print("---------read from socket byte n==, " .. (n) .. "sss==" .. s)
+	print("---------process_session")
 --	end
 end
 
@@ -42,9 +42,9 @@ function servsock()
 --		print("--------- socket ip=" .. net.getraddr(clisock))
 
 		print("-------------create session thread start.....");
-		local player = st.create_thread(process_session);
+		local player = st.spawn(process_session, clisock);
 --		 print(debug.traceback())  
-		st.run_thread(player, clisock);
+--		st.run_thread(player, clisock);
 		print("-------------create session thread end.....");
 	end
 	net.close(srvsock);
@@ -60,7 +60,7 @@ function sockcon()
 end
 
 function dbtest1(i)
-	print("---------" .. i .. "db_connect start 111 " .. string.format("%d", st.mstime()));
+	print("---------" .. i .. "db_connect start 111 " .. string.format("%d", st.ustime()));
 	
 	local conn = db.getConntion(dbpool);
 	local rs = db.executeQuery(conn, "select * from tb");
@@ -72,17 +72,17 @@ function dbtest1(i)
 --		print("---------" .. i .. "db_query colnum=" .. colnum .. ",value=" .. db.getString(rs, 2) );
 	end
 	db.close(conn);
-	print("---------" .. i .. "db_connect end 111 " .. string.format("%d", st.mstime()));
+	print("---------" .. i .. "db_connect end 111 " .. string.format("%d", st.ustime()));
 --	print("-------------- get key " .. db.command(c));
 --	db.set(dbpool, "qwe", 1234.567934556789)
 --    print("-------------- get key " .. db.get(dbpool, "qwe"));
---	print("---------" .. i .. "db_connect end 111 " .. string.format("%d", st.mstime()));
+--	print("---------" .. i .. "db_connect end 111 " .. string.format("%d", st.ustime()));
 end
 
 function dbtest2()
-	print("---------db_connect start 222 " .. string.format("%d", st.mstime()));
+	print("---------db_connect start 222 " .. string.format("%d", st.ustime()));
 	local c = db.connect();
-	print("---------db_connect end 222 " .. string.format("%d", st.mstime()));
+	print("---------db_connect end 222 " .. string.format("%d", st.ustime()));
 	print("-------------- get key " .. db.command(c));
 end
 
@@ -99,23 +99,61 @@ function luafun()
 	db.setSqlTimeout(dbpool, 3);
 	--db.start(dbpool);
 
-	print("time11111===" .. string.format("%d", st.mstime()))
-	for i=1,19 do
-		--print("---------create_thread " .. i);
-		cos[i] = st.create_thread(dbtest1);
-	end
-	--cos[5] = st.create_thread(dbtest1);
-	--cos[6] = st.create_thread(dbtest2);
-	print("time22222===" .. string.format("%d", st.mstime()))
+	print("time11111===" .. string.format("%d", st.ustime()))
+--	for i=1,1 do
+--		--print("---------spawn " .. i);
+--		cos[i] = st.spawn(servsock, i);
+--	end
+	--cos[5] = st.spawn(dbtest1);
+	--cos[6] = st.spawn(dbtest2);
+	
+--	local lt = 2;
+--	
+--	st.spawn(function ()
+--		lt = lt + 1;
+--		print("------------ lt=" .. lt);
+--	end);
+
+	local thread = st.spawn(function () 
+		local i = 0;
+		while true do
+			local tid, msg = st.recv();
+			if (tid > 0) then
+				print("recv msg: " .. msg .. ", from tid:" .. tid);
+				i = i+1;
+--				if i==1 then
+					st.send(tid, "resp >> " .. msg);
+--				end
+			end
+		end
+	end);
+	
+	st.spawn(function ()
+		local tid = st.tid(thread);
+		print("send from tid:" .. st.tid() .. ", to tid:" .. tid);
+		st.send(thread, "a haha!!");
+		st.send(thread, "b 77777777777");
+		st.send(tid, "cccvvv");
+		
+		while true do
+			local fromtid, msg = st.recv();
+			if (fromtid > 0) then
+				print(msg .. ", from tid:" .. fromtid);
+--				st.send(tid, "234");
+			end
+		end
+	end)
+	
+	print("time22222===" .. string.format("%d", st.ustime()))
 
 
-	print("time33333===" .. string.format("%d", st.mstime()))
-	for i=1,19 do
-		st.run_thread(cos[i], i);
-	end
+--	print("time33333===" .. string.format("%d", st.ustime()))
+--	for i=1,19 do
+--		st.run_thread(cos[i], i);
+--	end
 
 
-	print("time44444===" .. string.format("%d", st.mstime()))
+	print("time44444===" .. string.format("%d", st.ustime()))
 	--	st.stop_thread();
 	print("---------lua luafun end !!");
 end

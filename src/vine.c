@@ -74,9 +74,34 @@ config_t config;
 //	fclose(cfgFile);
 //}
 
+#include <intmap.h>
+
 int main(int argc, char **argv) {
 	exception_init();
 
+//	intmap_t *map = intmap_create(4);
+//intmap_put(map, 1, "sss");
+//intmap_put(map, 2, "ert");
+//intmap_put(map, 3, "asddd");
+//intmap_put(map, 4, "sss");
+//intmap_put(map, 5, "ert");
+//intmap_put(map, 6, "asddd");
+//intmap_put(map, 7, "sss");
+//intmap_put(map, 8, "ert");
+//intmap_put(map, 9, "asddd");
+//intmap_put(map, 3, "sss");
+//intmap_put(map, 3, "ert");
+//intmap_put(map, 3, "asddd");
+//intmap_put(map, 13, "sss");
+//intmap_put(map, 14, "ert");
+//intmap_put(map, 15, "asddd");
+//intmap_put(map, 16, "sss");
+//intmap_put(map, 17, "ert");
+//intmap_put(map, 18, "asddd");
+//intmap_put(map, 19, "asddd");
+//printf("==========%s\n", (char*)intmap_get(map, 3));
+//intmap_remove(map, 3);
+//printf("==========%s\n", (char*)intmap_get(map, 3));
 //	loadconfig();
 
 	lua_State* ls = luaL_newstate();

@@ -9,6 +9,7 @@
 #include <time.h>
 #include <errno.h>
 #include <poll.h>
+#include <stdint.h>
 
 #define ST_VERSION	    "1.9"
 #define ST_VERSION_MAJOR    1
@@ -37,6 +38,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// tid, use in thread message. add by blc
+typedef uint64_t st_tid_t;  /* sid(int32) + pad(char) + nodeid(int16) + internal_flag(char) */
+#define ST_MAKE_TID(sid)	(((st_tid_t)sid) << 32)
+#define ST_NODEID(tid) 		(((tid) >> 8) & 0xffff)
+#define ST_SID(tid) 		((tid) >> 32)
+#define ST_IS_INTERNAL(tid)	(((tid) & 0xff) == 0)
+
+typedef struct _st_thread_msg * st_thread_msg_t;
 
 typedef unsigned long long st_utime_t;
 typedef struct _st_thread * st_thread_t;
@@ -117,6 +127,19 @@ extern int st_sendto(st_netfd_t fd, const void *msg, int len, const struct socka
 extern int st_recvmsg(st_netfd_t fd, struct msghdr *msg, int flags, st_utime_t timeout);
 extern int st_sendmsg(st_netfd_t fd, const struct msghdr *msg, int flags, st_utime_t timeout);
 extern st_netfd_t st_open(const char *path, int oflags, mode_t mode);
+
+
+//////////////// thread message, add by blc
+extern st_thread_t st_get_thread(st_tid_t tid);
+extern st_tid_t st_get_tid(st_thread_t thread);
+extern void st_send_msg(st_thread_t thread, st_thread_msg_t msg);
+extern st_thread_msg_t st_recv_msg();
+
+extern st_thread_msg_t st_create_msg(const char *data, int len);
+extern void st_destroy_msg(st_thread_msg_t msg);
+extern int st_get_data(st_thread_msg_t msg, char **data);
+extern st_tid_t st_get_fromtid(st_thread_msg_t msg);
+
 
 #ifdef DEBUG
 extern void _st_show_thread_stack(st_thread_t thread, const char *messg);
