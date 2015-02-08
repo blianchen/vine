@@ -90,7 +90,8 @@ static int thread_create(lua_State* l) {
 
 static int get_tid(lua_State *l) {
 	st_thread_t thread;
-	if (lua_gettop(l) == 0) {
+	// if no param or nil is get current thread id
+	if (lua_gettop(l) == 0 || lua_type(l, 1) == LUA_TNIL) {
 		thread = st_thread_self();
 	} else {
 		thread = lua_touserdata(l, 1);
@@ -131,8 +132,33 @@ static int stsend(lua_State *l) {
 	return 0;
 }
 
+static int stsend_multi(lua_State *l) {
+	luaL_checktype(l, 1, LUA_TTABLE);
+
+	size_t buflen;
+	const char *buf = luaL_checklstring(l, 2, &buflen);
+	st_thread_msg_t msg = st_create_msg(buf, buflen);
+
+	int len = lua_objlen(l, 1);
+	int i;
+	st_tid_t tid;
+	st_thread_t thread;
+	for (i=1; i<=len; i++) {
+		lua_rawgeti(l, 1, i);
+		tid = luaL_checknumber(l, -1);
+		lua_pop(l, 1);
+
+		if (ST_IS_INTERNAL(tid)) {
+			thread = st_get_thread(tid);
+		} else {	// to thread in another node
+			//todo
+		}
+		st_send_msg(thread, msg);
+	}
+	return 0;
+}
+
 static int strecv(lua_State *l) {
-	st_thread_t tttt = st_thread_self();
 	st_thread_msg_t msg = st_recv_msg();
 
 	char *buf;
@@ -148,11 +174,11 @@ static int strecv(lua_State *l) {
 static const luaL_Reg funs[] = {
 		{"spawn", thread_create},
 		{"tid", get_tid},
-//		{"run_thread", thread_run},
 		{"usleep", stusleep},
 		{"ustime", stustime},
 		{"send", stsend},
 		{"recv", strecv},
+		{"send_multi", stsend_multi},
 		{NULL, NULL}
 };
 

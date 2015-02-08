@@ -36,13 +36,6 @@ st_tid_t st_get_fromtid(_st_thread_msg_t *msg) {
 }
 
 
-void st_send_msg(_st_thread_t * thread, _st_thread_msg_t *msg);
-_st_thread_msg_t *st_recv_msg();
-
-
-void st_send_multi(st_tid_t tids[], int tidsLen, char *buf) {
-
-}
 
 void st_send_msg(_st_thread_t *thread, _st_thread_msg_t *msg) {
 	_st_thread_msg_queue_t *mq = MALLOC(sizeof(_st_thread_msg_queue_t));
