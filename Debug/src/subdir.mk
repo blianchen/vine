@@ -7,6 +7,7 @@ C_SRCS += \
 ../src/base64.c \
 ../src/cJSON.c \
 ../src/exception.c \
+../src/ffid.c \
 ../src/hashmap.c \
 ../src/intmap.c \
 ../src/logger.c \
@@ -27,6 +28,7 @@ OBJS += \
 ./src/base64.o \
 ./src/cJSON.o \
 ./src/exception.o \
+./src/ffid.o \
 ./src/hashmap.o \
 ./src/intmap.o \
 ./src/logger.o \
@@ -47,6 +49,7 @@ C_DEPS += \
 ./src/base64.d \
 ./src/cJSON.d \
 ./src/exception.d \
+./src/ffid.d \
 ./src/hashmap.d \
 ./src/intmap.d \
 ./src/logger.d \

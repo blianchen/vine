@@ -52,10 +52,10 @@ end
 
 
 function sockcon()
-	local sock = net.connect("192.168.118.1:10000", "reuseaddr=true,package=2");
+	local sock = net.connect("127.0.0.1:17408", "reuseaddr=true,package=2");
 	local n,s = net.read(sock);
 	print("---------read from socket byte n==" .. (n) .. ", sss==" .. s);
-	net.write(sock, "test haha!");
+--	net.write(sock, "test haha!");
 	net.close(sock);
 end
 
@@ -89,6 +89,8 @@ end
 
 function luafun()
 	print("---------lua luafun start !!");
+	
+--	sockcon();
 
 	cos = {};
 
@@ -100,6 +102,10 @@ function luafun()
 	--db.start(dbpool);
 
 	print("time11111===" .. string.format("%d", st.ustime()))
+	
+--	st.send("tta@bogon", "trcv", "a hhahaha");
+st.send("tta@127.0.0.1", "trcv", "a hhahaha");
+	
 --	for i=1,1 do
 --		--print("---------spawn " .. i);
 --		cos[i] = st.spawn(servsock, i);
@@ -114,35 +120,50 @@ function luafun()
 --		print("------------ lt=" .. lt);
 --	end);
 
-	local thread = st.spawn(function () 
-		local i = 0;
-		while true do
-			local tid, msg = st.recv();
-			if (tid > 0) then
-				print("recv msg: " .. msg .. ", from tid:" .. tid);
-				i = i+1;
---				if i==1 then
-					st.send(tid, "resp >> " .. msg);
+--	local toTid = st.spawn(function () 
+--		local i = 0;
+--		while true do
+--			local tid, msg = st.recv();
+--			if (tid > 0) then
+--				print("recv msg: " .. msg .. ", from tid:" .. string.format("%d", tid));
+--				i = i+1;
+----				if i==1 then
+--					st.send(tid, "resp >> " .. msg);
+----				end
+--			end
+--		end
+--	end);
+--	
+--	st.spawn(function ()
+--		print("send from tid:" .. string.format("%d", st.tid()) .. ", to tid:" .. string.format("%d", toTid));
+--		st.send(toTid, "a haha!!");
+--		st.send(toTid, "b 77777777777");
+--		st.send(toTid, "cccvvv");
+--		
+--		while true do
+--			local fromtid, msg = st.recv();
+--			if (fromtid > 0) then
+--				print(msg .. ", from tid:" .. string.format("%d", fromtid));
+----				st.send(tid, "234");
+--			end
+--		end
+--	end)
+
+--	for i=1, 5 do
+--		cos[i] = st.spawn(function () 
+--			while true do
+--				print("thread " .. i .. ", start recv ...")
+--				local fromtid, msg = st.recv();
+--				if fromtid > 0 then
+--					print("recv id=" .. i .. ", msg=" .. msg);
 --				end
-			end
-		end
-	end);
-	
-	st.spawn(function ()
-		local tid = st.tid(thread);
-		print("send from tid:" .. st.tid() .. ", to tid:" .. tid);
-		st.send(thread, "a haha!!");
-		st.send(thread, "b 77777777777");
-		st.send(tid, "cccvvv");
-		
-		while true do
-			local fromtid, msg = st.recv();
-			if (fromtid > 0) then
-				print(msg .. ", from tid:" .. fromtid);
---				st.send(tid, "234");
-			end
-		end
-	end)
+--			end
+--		end);
+--	end
+--	
+--	st.spawn(function () 
+--		st.send_multi(cos, "multi send msg!!!!");
+--	end);
 	
 	print("time22222===" .. string.format("%d", st.ustime()))
 

@@ -161,8 +161,9 @@ struct _st_thread {
   int heap_index;
 
   // message queue // blc add
-  int sid;			/* thread id */
+  uint16_t sid;			/* thread id */
   _st_thread_msg_queue_t *msg_q;  /* thread message queue */
+  char *reg_name;
 
   void **private_data;        /* Per thread private data */
 
@@ -445,6 +446,18 @@ ssize_t st_write(_st_netfd_t *fd, const void *buf, size_t nbyte, st_utime_t time
 int st_poll(struct pollfd *pds, int npds, st_utime_t timeout);
 _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinable, int stk_size);
 
+
+/////////////////////////////////////////////////////////////
+// thread message
+/////////////////////////////////////////////////////////////
+/*
+ * Maximum length of a node name 127 characters; UTF-8 encoded -> max 255*4
+ */
+#define MAXSYMLEN (128*4)
+
+void st_rms_init();
+uint16_t st_get_vpmd_port();
+void st_set_vpmd_port(uint16_t port);
 
 #endif /* !__ST_COMMON_H__ */
 

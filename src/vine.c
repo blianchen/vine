@@ -24,12 +24,12 @@
 
 #include <vine.h>
 
-typedef struct config_t {
-	char* mainfile;
-	char* mainfun;
-} config_t;
-
-config_t config;
+//typedef struct config_t {
+//	char* mainfile;
+//	char* mainfun;
+//} config_t;
+//
+//config_t config;
 
 //static void* startLuaMain(void* arg) {
 //	lua_State* ls = arg;
@@ -75,34 +75,91 @@ config_t config;
 //}
 
 #include <intmap.h>
+#include <ffid.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <stdint.h>
+#include <exception/net_exception.h>
 
 int main(int argc, char **argv) {
 	exception_init();
 
-//	intmap_t *map = intmap_create(4);
-//intmap_put(map, 1, "sss");
-//intmap_put(map, 2, "ert");
-//intmap_put(map, 3, "asddd");
-//intmap_put(map, 4, "sss");
-//intmap_put(map, 5, "ert");
-//intmap_put(map, 6, "asddd");
-//intmap_put(map, 7, "sss");
-//intmap_put(map, 8, "ert");
-//intmap_put(map, 9, "asddd");
-//intmap_put(map, 3, "sss");
-//intmap_put(map, 3, "ert");
-//intmap_put(map, 3, "asddd");
-//intmap_put(map, 13, "sss");
-//intmap_put(map, 14, "ert");
-//intmap_put(map, 15, "asddd");
-//intmap_put(map, 16, "sss");
-//intmap_put(map, 17, "ert");
-//intmap_put(map, 18, "asddd");
-//intmap_put(map, 19, "asddd");
-//printf("==========%s\n", (char*)intmap_get(map, 3));
-//intmap_remove(map, 3);
-//printf("==========%s\n", (char*)intmap_get(map, 3));
+
+//int64map_t *map = int64map_create(4);
+//int64map_put(map, 1, "sss");
+//int64map_put(map, 2, "ert");
+//int64map_put(map, 3, "asddd");
+//int64map_put(map, 4, "sss");
+//int64map_put(map, 5, "ert");
+//int64map_put(map, 6, "asddd");
+//int64map_put(map, 7, "sss");
+//int64map_put(map, 8, "ert");
+//int64map_put(map, 9, "asddd");
+//int64map_put(map, 3, "sss");
+//int64map_put(map, 3, "ert");
+//int64map_put(map, 3, "asddd");
+//int64map_put(map, 13, "sss");
+//int64map_put(map, 14, "ert");
+//int64map_put(map, 15, "asddd");
+//int64map_put(map, 16, "sss");
+//int64map_put(map, 17, "ert");
+//int64map_put(map, 18, "asddd");
+//int64map_put(map, 19, "asddd");
+//
+//int size = int64map_size(map);
+//uint64_t *keys = MALLOC();
+//int64map_iterator *it = int64map_new_iterator(map);
+//char *tmp;
+//uint64_t key;
+//while ((tmp=int64map_next(it, &key)) != NULL) {
+//	printf("========iterator: key=%lu, val=%s \n", key, tmp);
+//}
+//int64map_del_iterator(it);
+//
+//printf("==========%s\n", (char*)int64map_get(map, 3));
+//int64map_remove(map, 3);
+//printf("==========%s\n", (char*)int64map_get(map, 3));
 //	loadconfig();
+
+//	ffid_t ffid = ffid_create(5);
+//	int id, i;
+//	for (i=0; i<5; i++) {
+//		id = ffid_getid(ffid);
+//		printf("get i=%i, id=%d \n", i, id);
+//	}
+//	ffid_releaseid(ffid, 3);
+//	ffid_releaseid(ffid, 1);
+//	ffid_releaseid(ffid, 4);
+//	ffid_releaseid(ffid, 2);
+//	ffid_releaseid(ffid, 0);
+//	for (i=0; i<5; i++) {
+//		id = ffid_getid(ffid);
+//		printf("get i=%i, id=%d \n", i, id);
+//	}
+
+	char *nodeName = NULL;
+
+	/*
+	 * parse argument
+	 * -n nodeName
+	 */
+	int i;
+	for (i = 1; argv[i] != NULL; i++) {
+		if (argv[i][0] != '-') /* not an option? */
+			break;
+
+		switch (argv[i][1]) { /* option */
+		case 'n':
+			if (argv[i][2] != '\0') return -1;
+			nodeName = argv[i + 1] != NULL ? argv[i + 1] : NULL;
+			break;
+		default:
+			break;
+		}
+	}
 
 	lua_State* ls = luaL_newstate();
 	if (ls == NULL) {
@@ -117,12 +174,15 @@ int main(int argc, char **argv) {
 //		THROW(st_exception, "st init error.");
 	}
 
+	st_rms_init(nodeName);
+
+
 	//// lua main fun
 	struct Smain *s = MALLOC(sizeof(struct Smain));
 	s->argc = argc;
 	s->argv = argv;
 	s->main_l = ls;
-	st_thread_create(lua_pmain, s, 0, 0);
+	st_thread_t mt = st_thread_create(lua_pmain, s, 0, 0);
 
 	st_thread_exit(NULL);
 

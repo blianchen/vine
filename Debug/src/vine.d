@@ -5,7 +5,8 @@ src/vine.d: ../src/vine.c /home/blc/c/score/libs/lua.h \
  /home/blc/c/score/include/utils.h /home/blc/c/score/include/str.h \
  /home/blc/c/score/include/exception/exception.h \
  /home/blc/c/score/include/st/st.h /home/blc/c/score/include/vine.h \
- /home/blc/c/score/include/intmap.h
+ /home/blc/c/score/include/intmap.h /home/blc/c/score/include/ffid.h \
+ /home/blc/c/score/include/exception/net_exception.h
 
 /home/blc/c/score/libs/lua.h:
 
@@ -32,3 +33,7 @@ src/vine.d: ../src/vine.c /home/blc/c/score/libs/lua.h \
 /home/blc/c/score/include/vine.h:
 
 /home/blc/c/score/include/intmap.h:
+
+/home/blc/c/score/include/ffid.h:
+
+/home/blc/c/score/include/exception/net_exception.h:

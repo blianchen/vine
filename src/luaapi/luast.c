@@ -35,7 +35,7 @@ static void* st_thread_callback_fun(void* arg) {
 	return NULL;
 }
 
-static int thread_create(lua_State* l) {
+static int stThreadCreate(lua_State* l) {
 	/* save stack index */
 	int base = lua_gettop(l);
 
@@ -74,7 +74,7 @@ static int thread_create(lua_State* l) {
 	 * stack[1] = thread main function
 	 * stack[2 -> nargs+1] = thread main function args
 	 * stack[nargs+1+1] = function args num
-	 * stack[nargs+1+2] = thread lua_State ref, use to undef
+	 * stack[nargs+1+2] = thread lua_State ref, use to unref
 	 */
 
 	st_thread_t thread = st_thread_create(st_thread_callback_fun, (void*) tl, 0, ST_THREAD_STACK_SIZE);
@@ -84,55 +84,59 @@ static int thread_create(lua_State* l) {
 		return 1;
 	}
 
-	lua_pushlightuserdata(l, thread);
+//	lua_pushlightuserdata(l, thread);
+	lua_pushnumber(l, st_get_tid(thread));	//return tid
 	return 1;
 }
 
-static int get_tid(lua_State *l) {
-	st_thread_t thread;
-	// if no param or nil is get current thread id
-	if (lua_gettop(l) == 0 || lua_type(l, 1) == LUA_TNIL) {
-		thread = st_thread_self();
-	} else {
-		thread = lua_touserdata(l, 1);
-	}
+//get current thread id
+static int stGetTid(lua_State *l) {
+	st_thread_t thread = st_thread_self();
 	lua_pushnumber(l, st_get_tid(thread));
 	return 1;
 }
 
-static int stusleep(lua_State* l) {
+static int stUsleep(lua_State* l) {
 	int ms = luaL_checkinteger(l, 1);
 	st_usleep(ms);
 	return 0;
 }
 
-static int stustime(lua_State* l) {
+static int stUstime(lua_State* l) {
 	lua_pushnumber(l, st_utime());
 	return 1;
 }
 
-static int stsend(lua_State *l) {
-	st_thread_t thread;
-	if (lua_type(l, 1) == LUA_TLIGHTUSERDATA) {
-		thread = lua_touserdata(l, 1);
-	} else {
+static int stSend(lua_State *l) {
+	if (lua_type(l, 1) == LUA_TNUMBER) {
 		st_tid_t tid = luaL_checknumber(l, 1);
+		size_t len;
+		const char *buf = luaL_checklstring(l, 2, &len);
+		st_thread_msg_t msg = st_create_msg(buf, len);
 		if (ST_IS_INTERNAL(tid)) {
-			thread = st_get_thread(tid);
+			st_thread_t thread = st_get_thread(tid);
+			if (thread)
+				st_send_msg(thread, msg);
+			else
+				LOG_WARN("thread no found, id=%lu", tid);
 		} else {	// to thread in another node
-			//todo
+			st_send_msg_by_tid(tid, msg);
 		}
 	}
-
-	size_t len;
-	const char *buf = luaL_checklstring(l, 2, &len);
-
-	st_thread_msg_t msg = st_create_msg(buf, len);
-	st_send_msg(thread, msg);
+	else if (lua_type(l, 1) == LUA_TSTRING) {
+		char *nodeUrl = luaL_checkstring(l, 1);
+		char *threadName = luaL_checkstring(l, 2);
+		size_t len;
+		const char *buf = luaL_checklstring(l, 3, &len);
+		st_thread_msg_t msg = st_create_msg(buf, len);
+		st_send_msg_by_name(nodeUrl, threadName, msg);
+	} else {
+		LOG_WARN("parameter error.");
+	}
 	return 0;
 }
 
-static int stsend_multi(lua_State *l) {
+static int stSendMulti(lua_State *l) {
 	luaL_checktype(l, 1, LUA_TTABLE);
 
 	size_t buflen;
@@ -140,6 +144,7 @@ static int stsend_multi(lua_State *l) {
 	st_thread_msg_t msg = st_create_msg(buf, buflen);
 
 	int len = lua_objlen(l, 1);
+	st_tid_t *nodeTids = CALLOC(len, sizeof(st_tid_t));
 	int i;
 	st_tid_t tid;
 	st_thread_t thread;
@@ -148,37 +153,105 @@ static int stsend_multi(lua_State *l) {
 		tid = luaL_checknumber(l, -1);
 		lua_pop(l, 1);
 
+		// first send internal thread.
 		if (ST_IS_INTERNAL(tid)) {
 			thread = st_get_thread(tid);
-		} else {	// to thread in another node
-			//todo
+			if (thread)
+				st_send_msg(thread, msg);
+			else
+				LOG_WARN("thread no found, id=%lu", tid);
+			return 0;
+		} else {
+			nodeTids[i] = tid;
 		}
-		st_send_msg(thread, msg);
+	}
+	// send msg in nodes
+	for (i=1; i<=len; i++) {
+		if (nodeTids[i]) {
+			st_send_msg_by_tid(nodeTids[i], msg);
+		}
 	}
 	return 0;
 }
 
-static int strecv(lua_State *l) {
+static int stRecv(lua_State *l) {
 	st_thread_msg_t msg = st_recv_msg();
 
 	char *buf;
-	int len = st_get_data(msg, &buf);
+	int len = st_msg_data(msg, &buf);
 
-	lua_pushnumber(l, st_get_fromtid(msg));
+	lua_pushnumber(l, st_msg_fromtid(msg));
 	lua_pushlstring(l, buf, len);
 
 	st_destroy_msg(msg);
 	return 2;
 }
 
+static int stHasMsg(lua_State *l) {
+	st_tid_t tid = luaL_checknumber(l, 1);
+	st_thread_t thread = st_get_thread(tid);
+	if (thread) {
+		lua_pushboolean(l, st_has_msg(thread));
+	} else {
+		lua_pushboolean(l, 0);
+	}
+	return 1;
+}
+
+static int stIsInternalTid(lua_State *l) {
+	st_tid_t tid = luaL_checknumber(l, 1);
+	lua_pushboolean(l, ST_IS_INTERNAL(tid));
+	return 1;
+}
+
+static int stRegTid(lua_State *l) {
+	char *name = luaL_checkstring(l, 1);
+	st_tid_t tid = luaL_checknumber(l, 2);
+	if (st_reg_tid(name, tid)) {
+		lua_pushboolean(l, 0);
+	} else {
+		lua_pushboolean(l, 1);
+	}
+	return 1;
+}
+static int stUnregTid(lua_State *l) {
+	char *name = luaL_checkstring(l, 1);
+	st_unreg_tid(name);
+	return 0;
+}
+static int stGetRegNames(lua_State *l) {
+	lua_newtable(l);
+	char **names = st_get_reg_names();
+	int i = 0;
+	while (names[i]) {
+		lua_pushinteger(l, i+1);
+		lua_pushstring(l, names[i]);
+		lua_rawset(l, -3);
+		i++;
+	}
+	return 1;	// a table
+}
+static int stGetRegTid(lua_State *l) {
+	char *name = luaL_checkstring(l, 1);
+	st_tid_t tid = st_get_reg_tid(name);
+	lua_pushnumber(l, tid);
+	return 1;
+}
+
 static const luaL_Reg funs[] = {
-		{"spawn", thread_create},
-		{"tid", get_tid},
-		{"usleep", stusleep},
-		{"ustime", stustime},
-		{"send", stsend},
-		{"recv", strecv},
-		{"send_multi", stsend_multi},
+		{"spawn", stThreadCreate},
+		{"tid", stGetTid},
+		{"usleep", stUsleep},
+		{"ustime", stUstime},
+		{"send", stSend},
+		{"recv", stRecv},
+		{"send_multi", stSendMulti},
+		{"has_msg", stHasMsg},
+		{"is_internal_tid", stIsInternalTid},
+		{"register", stRegTid},
+		{"unregister", stUnregTid},
+		{"registeredNames", stGetRegNames},
+		{"getRegisterTid", stGetRegTid},
 		{NULL, NULL}
 };
 

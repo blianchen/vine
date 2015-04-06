@@ -22,6 +22,8 @@
 #define ETIME ETIMEDOUT
 #endif
 
+#define ST_MAX_THREAD_NUM 0x4000	// 14 bit,  max thread num:16383
+
 #ifndef ST_UTIME_NO_TIMEOUT
 #define ST_UTIME_NO_TIMEOUT ((st_utime_t) -1LL)
 #endif
@@ -39,12 +41,13 @@
 extern "C" {
 #endif
 
+
 // tid, use in thread message. add by blc
-typedef uint64_t st_tid_t;  /* sid(int32) + pad(char) + nodeid(int16) + internal_flag(char) */
-#define ST_MAKE_TID(sid)	(((st_tid_t)sid) << 32)
-#define ST_NODEID(tid) 		(((tid) >> 8) & 0xffff)
-#define ST_SID(tid) 		((tid) >> 32)
-#define ST_IS_INTERNAL(tid)	(((tid) & 0xff) == 0)
+typedef uint64_t st_tid_t;  /* tid = sid(int14) + nodeid(int50);  nodeid = nodesid(int8) + vpmdid(int42) */
+#define ST_MAKE_TID(sid)	( ((uint64_t)(sid) << 50) | st_get_this_node_id() )
+#define ST_NODEID(tid) 		( (tid) & 0x3FFFFFFFFFFFF )
+#define ST_SID(tid) 		( ((tid) >> 50) & 0x3fff )
+#define ST_IS_INTERNAL(tid)	( ST_NODEID(tid) == st_get_this_node_id() )
 
 typedef struct _st_thread_msg * st_thread_msg_t;
 
@@ -132,13 +135,26 @@ extern st_netfd_t st_open(const char *path, int oflags, mode_t mode);
 //////////////// thread message, add by blc
 extern st_thread_t st_get_thread(st_tid_t tid);
 extern st_tid_t st_get_tid(st_thread_t thread);
+extern int st_reg_tid(char *name, st_tid_t tid);
+extern int st_unreg_tid(char *name);
+extern char** st_get_reg_names();
+extern st_tid_t st_get_reg_tid(char *name);
+
 extern void st_send_msg(st_thread_t thread, st_thread_msg_t msg);
+extern int st_send_msg_by_tid(st_tid_t tid, st_thread_msg_t msg);
+extern int st_send_msg_by_name(char *nodeUrl, char *threadName, st_thread_msg_t msg);
 extern st_thread_msg_t st_recv_msg();
+extern int st_has_msg(st_thread_t thread);
 
 extern st_thread_msg_t st_create_msg(const char *data, int len);
 extern void st_destroy_msg(st_thread_msg_t msg);
-extern int st_get_data(st_thread_msg_t msg, char **data);
-extern st_tid_t st_get_fromtid(st_thread_msg_t msg);
+extern int st_msg_data(st_thread_msg_t msg, char **data);
+extern st_tid_t st_msg_fromtid(st_thread_msg_t msg);
+
+extern uint64_t st_get_this_node_id();
+extern void st_rms_init();
+extern uint16_t st_get_vpmd_port();
+extern void st_set_vpmd_port(uint16_t port);
 
 
 #ifdef DEBUG

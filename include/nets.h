@@ -12,6 +12,8 @@
 
 #define SOCKET_DATA_BUF_SIZE 4096
 
+#define SOCKET_LISTEN_REQUEST_QUEUE 256
+
 
 typedef struct socket_s {
 	st_netfd_t nfd;

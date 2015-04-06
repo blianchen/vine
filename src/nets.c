@@ -18,6 +18,7 @@
 #include <mem.h>
 #include <nets.h>
 
+
 static int read_net_address(const char *str, struct sockaddr_in *sin) {
 	char host[128], *p;
 	struct hostent *hp;
@@ -117,7 +118,7 @@ socket_t nets_listen(int port, const char* host, const char* options) {
 		THROW(net_exception, "Bind socket error: %s(errno: %d)", getLastErrorText(), getLastError());
 		return NULL;
 	}
-	if (listen(sockfd, 256) == -1) {
+	if (listen(sockfd, SOCKET_LISTEN_REQUEST_QUEUE) == -1) {
 		close(sockfd);
 		THROW(net_exception, "Listen socket error: %s(errno: %d)", getLastErrorText(), getLastError());
 		return NULL;
@@ -152,7 +153,7 @@ socket_t nets_accept(socket_t serverSocket) {
 	}
 
 	socket_t clientSocket = MALLOC(sizeof(struct socket_s));
-	clientSocket->port = cli_add.sin_port;
+	clientSocket->port = ntohs(cli_add.sin_port);
 	clientSocket->ip = str_dup(inet_ntoa(cli_add.sin_addr));
 	clientSocket->nfd = st_clifd;
 	clientSocket->package = serverSocket->package;
@@ -212,6 +213,7 @@ socket_t nets_connect(const char* addr, const char* options) {
 
 	if (st_connect(cli_nfd, (struct sockaddr *) &rmt_addr, sizeof(rmt_addr), timeout) < 0) {
 		st_netfd_close(cli_nfd);
+		THROW(net_exception, "st_connect error: %s(errno: %d)", getLastErrorText(), getLastError());
 		return NULL;
 	}
 

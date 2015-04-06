@@ -7,10 +7,15 @@
 #include <errno.h>
 #include "common.h"
 
+#include <ffid.h>
 #include <intmap.h>
+#include <hashmap.h>
+#include <str.h>
 
-intmap_t *_st_thread_id_map;	/* thread map,  (int)--(_st_thread_t*) */
-int _st_thread_sid = 0;			/* thread sid */
+
+intmap_t _st_thread_id_map;	/* thread map,  (int)--(_st_thread_t*) */
+ffid_t _st_thread_sid;			/* thread sid */
+hashmap_t _st_thread_reg_map;		/* registered thread */
 
 /* Global data */
 _st_vp_t _st_this_vp;           /* This VP */
@@ -26,6 +31,45 @@ _st_thread_t *st_get_thread(st_tid_t tid) {
 }
 
 st_tid_t st_get_tid(_st_thread_t *thread) {
+	return ST_MAKE_TID(thread->sid);
+}
+
+int st_reg_tid(char *name, st_tid_t tid) {
+	st_thread_t rt;
+	if (HMAP_S_OK == hashmap_get(_st_thread_reg_map, name, (void*)&rt)) {
+		return -1;
+	}
+	st_thread_t thread = st_get_thread(tid);
+	if (!thread) {
+		return -2;
+	}
+	thread->reg_name = str_dup(name);
+	return hashmap_put(_st_thread_reg_map, thread->reg_name, thread);
+}
+
+int st_unreg_tid(char *name) {
+	return hashmap_remove(_st_thread_reg_map, name) == HMAP_S_OK;
+}
+
+char** st_get_reg_names() {
+	char **names = MALLOC(sizeof(char*) * (hashmap_size(_st_thread_reg_map) + 1));
+	int i = 0;
+	hashmap_iterator *it = hashmap_new_iterator(_st_thread_reg_map);
+	char *key;
+	while (hashmap_next(it, (void*)&key)) {
+		names[i] = key;
+		i++;
+	}
+	hashmap_del_iterator(it);
+	*names[i] = 0;
+	return names;
+}
+
+st_tid_t st_get_reg_tid(char *name) {
+	st_thread_t thread;
+	if (HMAP_S_OK != hashmap_get(_st_thread_reg_map, name, (void*)&thread)) {
+		return 0;
+	}
 	return ST_MAKE_TID(thread->sid);
 }
 
@@ -105,6 +149,8 @@ void _st_vp_schedule(void) {
 int st_init(void) {
 	// id map init
 	_st_thread_id_map = intmap_create(0);
+	_st_thread_sid = ffid_create(ST_MAX_THREAD_NUM);
+	_st_thread_reg_map = hashmap_create();
 
 	_st_thread_t *thread;
 
@@ -198,7 +244,7 @@ void *_st_idle_thread_start(void *arg) {
 	}
 
 	/* No more threads */
-	exit(0);
+//	exit(0);
 
 	/* NOTREACHED */
 	return NULL;
@@ -231,7 +277,10 @@ void st_thread_exit(void *retval) {
 #endif
 
 	// remove thread from map
-	intmap_remove(_st_thread_id_map, thread->sid);
+	if (thread->sid > 0) {
+		intmap_remove(_st_thread_id_map, thread->sid);
+		hashmap_remove(_st_thread_reg_map, thread->reg_name);
+	}
 
 	if (!(thread->flags & _ST_FL_PRIMORDIAL))
 		_st_stack_free(thread->stack);
@@ -293,6 +342,9 @@ void _st_thread_main(void) {
 
 	/* Run thread main */
 	thread->retval = (*thread->start)(thread->arg);
+
+	// release thread id
+	ffid_releaseid(_st_thread_sid, thread->sid);
 
 	/* All done, time to go away */
 	st_thread_exit(thread->retval);
@@ -549,8 +601,8 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinabl
 	mq->next = mq;
 	mq->prev = mq;
 	thread->msg_q = mq;
-	thread->sid = ++_st_thread_sid;
-	intmap_put(_st_thread_id_map, _st_thread_sid, thread);
+	thread->sid = ffid_getid(_st_thread_sid);
+	intmap_put(_st_thread_id_map, thread->sid, thread);
 
 #ifndef __ia64__
 	_ST_INIT_CONTEXT(thread, stack->sp, _st_thread_main);

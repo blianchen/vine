@@ -85,6 +85,7 @@ static void print_usage (void) {
   fprintf(stderr,
   "usage: %s [options] [script [args]].\n"
   "Available options are:\n"
+  "  -n name  set node name\n"
   "  -e stat  execute string " LUA_QL("stat") "\n"
   "  -l name  require library " LUA_QL("name") "\n"
   "  -i       enter interactive mode after executing " LUA_QL("script") "\n"
@@ -294,33 +295,46 @@ static int handle_script(lua_State *L, char **argv, int n) {
 }
 
 
+/* indices of various argument indicators in array args */
+#define has_i		0	/* -i */
+#define has_v		1	/* -v */
+#define has_e		2	/* -e */
+#define has_E		3	/* -E */
+
+#define num_has		4	/* number of 'has_*' */
+
 /* check that argument has no extra characters at the end */
 #define notail(x)	{if ((x)[2] != '\0') return -1;}
 
-static int collectargs(char **argv, int *pi, int *pv, int *pe) {
+static int collectargs(char **argv, int *args) {
 	int i;
 	for (i = 1; argv[i] != NULL; i++) {
 		if (argv[i][0] != '-') /* not an option? */
 			return i;
 		switch (argv[i][1]) { /* option */
+		////////////////// not lua argument, skip /////////////
+		case 'n':
+			i++;
+			break;
+		////////////////////// skip argument //////////////////
 		case '-':
-			notail(argv[i])
-			;
+			notail(argv[i]);
 			return (argv[i + 1] != NULL ? i + 1 : 0);
 		case '\0':
 			return i;
+//		case 'E':
+//			args[has_E] = 1;
+//			break;
 		case 'i':
-			notail(argv[i])
-			;
-			*pi = 1; /* go through */
+			notail(argv[i]);
+			args[has_i] = 1; /* go through */
 			/* no break */
 		case 'v':
-			notail(argv[i])
-			;
-			*pv = 1;
+			notail(argv[i]);
+			args[has_v] = 1;
 			break;
 		case 'e':
-			*pe = 1; /* go through */
+			args[has_e] = 1; /* go through */
 			/* no break */
 		case 'l':
 			if (argv[i][2] == '\0') {
@@ -330,7 +344,7 @@ static int collectargs(char **argv, int *pi, int *pv, int *pe) {
 			}
 			break;
 		default:
-			return -1; /* invalid option */
+			return -i; /* invalid option */
 		}
 	}
 	return 0;
@@ -385,9 +399,17 @@ void* lua_pmain(void *arg) {
 	lua_State *L = s->main_l;
 	char **argv = s->argv;
 	int script;
-	int has_i = 0, has_v = 0, has_e = 0;
-	if (argv[0] && argv[0][0])
-		progname = argv[0];
+
+	int args[num_has];
+	args[has_i] = args[has_v] = args[has_e] = args[has_E] = 0;
+	if (argv[0] && argv[0][0]) progname = argv[0];
+	script = collectargs(argv, args);
+	if (script < 0) { /* invalid args? */
+		print_usage();
+		return 0;
+	}
+
+	if (args[has_v]) print_version();
 
 	lua_gc(L, LUA_GCSTOP, 0); /* stop collector during initialization */
 	/* open libraries */
@@ -402,20 +424,10 @@ void* lua_pmain(void *arg) {
 	lua_newtable(L);
 	lua_rawset(L, LUA_GLOBALSINDEX);
 
-//	lua_gc(L, LUA_GCSTOP, 0); /* stop collector during initialization */
-//	luaL_openlibs(L); /* open libraries */
-//	lua_gc(L, LUA_GCRESTART, 0);
 	s->status = handle_luainit(L);
 	if (s->status != 0)
 		return 0;
-	script = collectargs(argv, &has_i, &has_v, &has_e);
-	if (script < 0) { /* invalid args? */
-		print_usage();
-		s->status = 1;
-		return 0;
-	}
-	if (has_v)
-		print_version();
+
 	s->status = runargs(L, argv, (script > 0) ? script : s->argc);
 	if (s->status != 0)
 		return 0;
@@ -423,9 +435,9 @@ void* lua_pmain(void *arg) {
 		s->status = handle_script(L, argv, script);
 	if (s->status != 0)
 		return 0;
-	if (has_i)
+	if (args[has_i])
 		dotty(L);
-	else if (script == 0 && !has_e && !has_v) {
+	else if (script == 0 && !args[has_e] && !args[has_v]) {
 		if (lua_stdin_is_tty()) {
 			print_version();
 			dotty(L);
