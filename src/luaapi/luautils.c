@@ -18,6 +18,7 @@
 #include <luaapi/luast.h>
 #include <luaapi/luadb.h>
 #include <luaapi/luanet.h>
+#include <luaapi/luapack.h>
 
 #include <luaapi/luautils.h>
 
@@ -33,9 +34,10 @@ static const luaL_Reg uselualibs[] = {
   {LUA_MATHLIBNAME, luaopen_math},
   {LUA_DBLIBNAME, luaopen_debug},
   // vine libs
-  {LUA_ST_LIBNAME, luaopen_stlib},
-  {LUA_NET_LIBNAME, luaopen_netlib},
-  {LUA_DB_LIBNAME, luaopen_dblib},
+  {LUA_ST_LIBNAME, luaopen_st},
+  {LUA_NET_LIBNAME, luaopen_net},
+  {LUA_DB_LIBNAME, luaopen_db},
+  {LUA_PACK_LIBNAME, luaopen_pack},
 
   {NULL, NULL}
 };

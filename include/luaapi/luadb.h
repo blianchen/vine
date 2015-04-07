@@ -13,6 +13,6 @@
 
 #define LUA_DB_LIBNAME "db"
 
-LUA_API int luaopen_dblib(lua_State* l);
+LUA_API int luaopen_db(lua_State* l);
 
 #endif

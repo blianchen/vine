@@ -726,6 +726,7 @@ static void *_rms_server_accept_loop(void *arg) {
  * NODE_CONN_RESP
  * byte 1			message code, NODE_CONN_RESP
  * byte 1			success code
+ * byte 8			node id
  * byte 2			data length
  * byte 2			nameLen
  * byte nameLen		node name
@@ -818,8 +819,8 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			}
 			int64map_del_iterator(it);
 			char *writeBuf = MALLOC(writeNum);
-			it = int64map_new_iterator(_st_nodeid_info_map);
 			int posw = 0;
+			it = int64map_new_iterator(_st_nodeid_info_map);
 			while ((nodeInfoIter=int64map_next(it, &key))) {
 				put_int16(nodeInfoIter->nameLen, writeBuf+posw);
 				memcpy(writeBuf+posw+2, nodeInfoIter->name, nodeInfoIter->nameLen);
@@ -834,13 +835,14 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			}
 			int64map_del_iterator(it);
 			// header
-			unsigned char hb[4];
+			unsigned char hb[12];
 			hb[0] = NODE_CONN_RESP;
-			put_int16(writeNum, hb+1);
+			put_int16(writeNum+9, hb+1);
 			hb[3] = 0;	//success code	//TODO when 1, error message
+			put_uint64(_st_this_node_id, hb+4); // write this node id
 			struct iovec iov[2];
 			iov[0].iov_base = hb;
-			iov[0].iov_len = 4;
+			iov[0].iov_len = 12;
 			iov[1].iov_base = writeBuf;
 			iov[1].iov_len = writeNum;
 			st_writev(soc, iov, 2, ST_UTIME_NO_TIMEOUT);
@@ -849,9 +851,16 @@ static void *_rms_rcv_thread_loop(void *arg) {
 		case NODE_CONN_RESP: {
 			if (data[0] != 0) {		// connect request error
 				//TODO log out error message
-				return NULL;
+				goto connectEnd;
 			}
-			int pn = 1;
+			uint64_t fromNodeId = get_uint64(data+1);
+			nodeInfo = int64map_get(_st_nodeid_info_map, fromNodeId);
+//			if (nodeInfo->id != fromNodeId) {
+//				LOG_WARN("connecting node id error, request id=%lu and response id=%lu", nodeInfo->id, fromNodeId);
+//				goto connectEnd;
+//			}
+
+			int pn = 9;
 			_rms_node_info *nitmp;
 			while (pn < dataLen) {
 				nodeInfoIter = MALLOC(sizeof(_rms_node_info));
@@ -904,7 +913,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			toid = st_get_reg_tid(threadName);
 			fromid = get_uint64(data + 2 + tnlen);
 
-			st_thread_msg_t msg = st_create_msg(data + 10 + tnlen, dataLen - 10 + tnlen);
+			st_thread_msg_t msg = st_create_msg(data + 10 + tnlen, dataLen - 10 - tnlen);
 			msg->f_tid = fromid;
 			st_thread_t tothread = st_get_thread(toid);
 			if (tothread)
@@ -968,15 +977,18 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	}
 	// connect close or error
 //	LOG_WARN("connection error: %s(errno: %d)", getLastErrorText(), getLastError());
+	connectEnd:
 	FREE(data);
 	st_netfd_close(soc);
-	int64map_remove(_st_nodeid_sock_map, nodeInfo->id);
-	int64map_remove(_st_nodeid_info_map, nodeInfo->id);
-	hashmap_remove(_st_nodeurl_info_map, nodeInfo->url);
-	FREE(nodeInfo->name);
-	FREE(nodeInfo->host);
-	FREE(nodeInfo->url);
-	FREE(nodeInfo);
+//	if (nodeInfo) {
+		int64map_remove(_st_nodeid_sock_map, nodeInfo->id);
+		int64map_remove(_st_nodeid_info_map, nodeInfo->id);
+		hashmap_remove(_st_nodeurl_info_map, nodeInfo->url);
+		FREE(nodeInfo->name);
+		FREE(nodeInfo->host);
+		FREE(nodeInfo->url);
+		FREE(nodeInfo);
+//	}
 	return NULL;
 }
 

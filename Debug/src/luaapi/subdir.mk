@@ -6,18 +6,21 @@
 C_SRCS += \
 ../src/luaapi/luadb.c \
 ../src/luaapi/luanet.c \
+../src/luaapi/luapack.c \
 ../src/luaapi/luast.c \
 ../src/luaapi/luautils.c 
 
 OBJS += \
 ./src/luaapi/luadb.o \
 ./src/luaapi/luanet.o \
+./src/luaapi/luapack.o \
 ./src/luaapi/luast.o \
 ./src/luaapi/luautils.o 
 
 C_DEPS += \
 ./src/luaapi/luadb.d \
 ./src/luaapi/luanet.d \
+./src/luaapi/luapack.d \
 ./src/luaapi/luast.d \
 ./src/luaapi/luautils.d 
 

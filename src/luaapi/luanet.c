@@ -106,7 +106,7 @@ static const luaL_Reg funs[] = {
 		{NULL, NULL}
 };
 
-LUA_API int luaopen_netlib(lua_State* l) {
+LUA_API int luaopen_net(lua_State* l) {
 	luaL_register(l, LUA_NET_LIBNAME, funs);
 	return 1;
 }

@@ -9,6 +9,6 @@
 
 #define LUA_NET_LIBNAME "net"
 
-LUA_API int luaopen_netlib(lua_State* l);
+LUA_API int luaopen_net(lua_State* l);
 
 #endif

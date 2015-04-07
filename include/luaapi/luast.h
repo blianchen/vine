@@ -28,7 +28,7 @@ extern char LUA_THREAD_GLOBAL_IDX;
 
 //void st_context_init();
 
-LUA_API int luaopen_stlib(lua_State* l);
+LUA_API int luaopen_st(lua_State* l);
 
 
 ////////////////////////////////////////////////////////////

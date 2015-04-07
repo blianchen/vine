@@ -105,7 +105,7 @@ function luafun()
 	
 --	st.send("tta@bogon", "trcv", "a hhahaha");
 --st.send("tta@127.0.0.1", "trcv", "a hhahaha");
-local ps = pack.pack("a", "b hahaha!!");
+local ps = pack.pack(">P2ip", "b hahaha!!", 23, 456, "hello ==");
 st.send("tta@127.0.0.1", "trcv", ps);
 	
 --	for i=1,1 do
