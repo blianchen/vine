@@ -78,7 +78,7 @@
 //static _st_thread_t *_st_send_msg_thread = NULL;	//send message thread, process all external node message
 static uint16_t _st_vpmd_listen_port = 1511;
 
-static int64map_t _st_nodeid_sock_map;
+//static int64map_t _st_nodeid_sock_map;
 static int64map_t _st_nodeid_info_map;
 static hashmap_t _st_nodeurl_info_map;
 
@@ -156,7 +156,7 @@ typedef struct {
 	char *name;
 	char *host;
 	char *url;
-//	_st_thread_t *thread;
+	st_netfd_t sock;
 } _rms_node_info;
 
 /* rms = remote message server */
@@ -199,17 +199,14 @@ static int copy_str(char *x, char *y) {
 }
 
 int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
-	/*
-	 * to another node
-	 */
-	if (_st_nodeid_sock_map == NULL) {
+	// to another node
+	if (_st_nodeid_info_map == NULL) {
 		LOG_WARN("This node has not init rpc, can't send message in nodes.");
 		return -1;
 	}
-	int nodeid = ST_NODEID(tid);
-	st_netfd_t sock = int64map_get(_st_nodeid_sock_map, nodeid);
-	if (sock == NULL) {
-		_rms_node_info *nodeinfo = NULL;
+	uint64_t nodeid = ST_NODEID(tid);
+	_rms_node_info *nodeinfo = int64map_get(_st_nodeid_info_map, nodeid);
+	if (nodeinfo == NULL) {
 		// find node info
 		int loopn = 8;
 		while (_rms_find_nodeinfo(nodeid, &nodeinfo) && loopn > 0) {
@@ -221,15 +218,14 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
 		}
 
 		// create a connect to the node
-		sock = _rms_connect_to(nodeinfo->host, nodeinfo->port);
-		if (sock == NULL) return -1;	//error
+		nodeinfo->sock = _rms_connect_to(nodeinfo->host, nodeinfo->port);
+		if (nodeinfo->sock == NULL) return -1;	//error
 
 		// send NODE_CONN_REQ
-		_rms_send_conn_req(sock);
+		_rms_send_conn_req(nodeinfo->sock);
 
 		// rcv loop
-		st_thread_create(_rms_rcv_thread_loop, sock, 0, 0);
-		int64map_put(_st_nodeid_sock_map, nodeid, sock);
+		st_thread_create(_rms_rcv_thread_loop, nodeinfo->sock, 0, 0);
 	}
 
 	unsigned char hb[19];
@@ -242,31 +238,36 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
 	iov[0].iov_len = 19;
 	iov[1].iov_base = msg->data;
 	iov[1].iov_len = msg->len;
-	return st_writev(sock, iov, 2, ST_UTIME_NO_TIMEOUT);
+	return st_writev(nodeinfo->sock, iov, 2, ST_UTIME_NO_TIMEOUT);
 }
 
 /*
  * nodeUrl = nodeName@hostName
  */
-int st_send_msg_by_name(char *nodeUrl, char *threadName, _st_thread_msg_t *msg) {
-	int nameLen = 0;
-	char *nodeName = nodeUrl, *hostName = NULL;
-	while (nodeUrl[nameLen]) {
-		if (nodeUrl[nameLen] == '@') {
-			hostName = nodeUrl + nameLen + 1;
-			nodeUrl[nameLen] = '\0';
-			nameLen++;
-			break;
-		}
-		nameLen++;
-	}
-	if (hostName == NULL) {
-		LOG_WARN("node format error. (%s)", nodeUrl);
+int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) {
+	if (_st_nodeurl_info_map == NULL) {
+		LOG_WARN("This node has not init rpc, can't send message in nodes.");
 		return -1;
 	}
-
 	_rms_node_info *nodeInfo;
-	if (hashmap_get(_st_nodeurl_info_map, nodeUrl, (void*)&nodeInfo)) {
+	if (hashmap_get(_st_nodeurl_info_map, nodeUri, (void*)&nodeInfo)) {
+		int nameLen = 0;
+		char *nodeUrl = str_dup(nodeUri);
+		char *nodeName = nodeUrl, *hostName = NULL;
+		while (nodeUrl[nameLen]) {
+			if (nodeUrl[nameLen] == '@') {
+				hostName = nodeUrl + nameLen + 1;
+				nodeUrl[nameLen] = '\0';
+				nameLen++;
+				break;
+			}
+			nameLen++;
+		}
+		if (hostName == NULL) {
+			LOG_WARN("node format error. (%s)", nodeUrl);
+			return -1;
+		}
+
 		// no find, connect to vpmd, request node info
 		st_netfd_t vsock;
 		while ( (vsock = _rms_connect_to(hostName, _st_vpmd_listen_port)) == NULL ) {
@@ -289,12 +290,12 @@ int st_send_msg_by_name(char *nodeUrl, char *threadName, _st_thread_msg_t *msg) 
 			LOG_WARN("recv vpmd message error. ");
 		}
 
-		nodeInfo = MALLOC(sizeof(_rms_node_info));
+		nodeInfo = CALLOC(1, sizeof(_rms_node_info));
 		nodeInfo->nameLen = length_str(nodeName);
 		nodeInfo->name = str_dup(nodeName);
 		nodeInfo->hostLen = length_str(hostName);
 		nodeInfo->host = str_dup(hostName);
-		nodeInfo->url = str_dup(nodeUrl);
+		nodeInfo->url = str_dup(nodeUri);
 //		nodeInfo->thread = NULL;
 
 		int pos = 2;
@@ -314,19 +315,15 @@ int st_send_msg_by_name(char *nodeUrl, char *threadName, _st_thread_msg_t *msg) 
 		hashmap_put(_st_nodeurl_info_map, nodeInfo->url, nodeInfo);
 	}
 
-	st_netfd_t sock;
-	sock = int64map_get(_st_nodeid_sock_map, nodeInfo->id);
-	if (sock == NULL) {
+	if (nodeInfo->sock == NULL) {
 		// create a connect to the node
-		sock = _rms_connect_to(hostName, nodeInfo->port);
-		if (sock == NULL) return 1;	//error
+		nodeInfo->sock = _rms_connect_to(nodeInfo->host, nodeInfo->port);
+		if (nodeInfo->sock == NULL) return 1;	//error
 
 		// send NODE_CONN_REQ
-		_rms_send_conn_req(sock);
-
+		_rms_send_conn_req(nodeInfo->sock);
 		// rcv loop
-		st_thread_create(_rms_rcv_thread_loop, sock, 0, 0);
-		int64map_put(_st_nodeid_sock_map, nodeInfo->id, sock);
+		st_thread_create(_rms_rcv_thread_loop, nodeInfo->sock, 0, 0);
 	}
 
 	int ltn = length_str(threadName) + 1;
@@ -342,13 +339,16 @@ int st_send_msg_by_name(char *nodeUrl, char *threadName, _st_thread_msg_t *msg) 
 	iov[0].iov_len = hdlen + 3;
 	iov[1].iov_base = msg->data;
 	iov[1].iov_len = msg->len;
-	return st_writev(sock, iov, 2, ST_UTIME_NO_TIMEOUT);
+	return st_writev(nodeInfo->sock, iov, 2, ST_UTIME_NO_TIMEOUT);
 }
 
 static int _read_bytes(st_netfd_t soc, char *tobuf, int nbyte) {
 	int rn, n;
 	int unread;
 	rn = st_read(soc, tobuf, nbyte, ST_UTIME_NO_TIMEOUT);
+	if (rn <= 0) { // read error
+		return rn;
+	}
 	while (rn < nbyte) {
 		unread = nbyte - rn;
 		n = st_read(soc, tobuf+rn, unread, ST_UTIME_NO_TIMEOUT);
@@ -440,12 +440,13 @@ static void _rms_send_find_nodeid_req(uint64_t nodeid) {
 	put_int16(8, hb+1);
 	put_uint64(nodeid, hb+3);
 
-	st_netfd_t sock;
+	_rms_node_info *nodeInfo;
 	uint64_t key;
-	int64map_iterator *it = int64map_new_iterator(_st_nodeid_sock_map);
-	while ((sock=int64map_next(it, &key))) {
+	int64map_iterator *it = int64map_new_iterator(_st_nodeid_info_map);
+	while ((nodeInfo=int64map_next(it, &key))) {
 		// NODE_FINDID_REQ
-		st_write(sock, hb, 11, ST_UTIME_NO_TIMEOUT);
+		if (nodeInfo->sock)
+			st_write(nodeInfo->sock, hb, 11, ST_UTIME_NO_TIMEOUT);
 	}
 	int64map_del_iterator(it);
 }
@@ -488,7 +489,6 @@ void st_rms_init(char *nodeName) {
 	_this_hostname[127] = '\0';
 	gethostname(_this_hostname, 127);
 	_st_this_node_name = str_dup(nodeName);
-	_st_nodeid_sock_map = int64map_create(16);
 	_st_nodeid_info_map = int64map_create(16);
 	_st_nodeurl_info_map = hashmap_create();
 
@@ -559,7 +559,8 @@ static int _rms_start_server() {
 	int retryNum = 64;
 	int sockfd;
 	while ((sockfd = _rms_create_listen_socket()) < 0 && retryNum >0) {
-		st_usleep(10000000);		// 10s retry
+//		st_usleep(10000000);		// 10s retry
+		sleep(1);
 		retryNum--;
 	}
 
@@ -572,8 +573,9 @@ static int _rms_start_server() {
 	LOG_INFO("Rpc server socket listen start, listen port is %d.", _st_rpc_server_listen_port);
 
 	//send rpc server listen port and node name to vpmd, get nodeid from vpmd
-	while (_rms_register_node() < 0) {
-		st_usleep(10000000);		// 10s retry
+	while (_rms_register_node()) {
+//		st_usleep(10000000);		// 10ms retry
+		sleep(1);
 	}
 
 	st_netfd_t st_srvfd;
@@ -595,7 +597,7 @@ static int _rms_create_listen_socket() {
 		return -1;
 	}
 	int n = 1, ir;
-	ir = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n));
+//	ir = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n));
 	ir = setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (char *)&n, sizeof(n));
 	if (ir < 0) {
 		close(sockfd);
@@ -623,6 +625,7 @@ static int _rms_create_listen_socket() {
 
 static int _rms_register_node() {
 	st_netfd_t cli_nfd = _rms_connect_to("127.0.0.1", _st_vpmd_listen_port);  // vpmd in localhost
+	if (!cli_nfd) return -1;
 
 	//send rpc server listen port and node name to vpmd
 	int offset = 2;				//2byte header, offset from 2
@@ -678,7 +681,7 @@ static void *_rms_register_node_loop(void *arg) {
 			// connection error or close, re-register node
 			LOG_WARN("connection error or close: %s(errno: %d)", getLastErrorText(), getLastError());
 			st_netfd_close(cli_nfd);
-			while (_rms_register_node() < 0) {
+			while (_rms_register_node()) {
 				st_usleep(10000000);		// 10s
 			}
 			return NULL;
@@ -756,7 +759,6 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	st_netfd_t soc = (st_netfd_t) arg;
 
 	_rms_node_info *nodeInfo = NULL;
-	_rms_node_info *nodeInfoIter;
 
 	char readBuf[INBUF_SIZE];
 	// read loop
@@ -784,9 +786,10 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				FREE(nodeInfo->name);
 				FREE(nodeInfo->host);
 				FREE(nodeInfo->url);
+				if (nodeInfo->sock) st_netfd_close(nodeInfo->sock);
 				FREE(nodeInfo);
 			}
-			nodeInfo = MALLOC(sizeof(_rms_node_info));
+			nodeInfo = CALLOC(1, sizeof(_rms_node_info));
 
 			int pos = 0;
 			nodeInfo->id = get_uint64(data);
@@ -805,11 +808,10 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			int nnl = nodeInfo->nameLen + nodeInfo->hostLen + 2;
 			nodeInfo->url = MALLOC(nnl);
 			snprintf(nodeInfo->url, nnl, "%s@%s", nodeInfo->name, nodeInfo->host);
-			int64map_put(_st_nodeid_sock_map, nodeInfo->id, soc);
-			int64map_put(_st_nodeid_info_map, nodeInfo->id, nodeInfo);
-			hashmap_put(_st_nodeurl_info_map, nodeInfo->url, nodeInfo);
+			nodeInfo->sock = soc;
 
 			//response,  NODE_CONN_RESP
+			_rms_node_info *nodeInfoIter;
 			int writeNum = 0;	// out data byte size
 			// node info loop
 			uint64_t key;
@@ -818,7 +820,13 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				writeNum += nodeInfoIter->nameLen + nodeInfoIter->hostLen + 4;
 			}
 			int64map_del_iterator(it);
-			char *writeBuf = MALLOC(writeNum);
+			char *writeBuf;
+			if (writeNum > 0) {
+				writeBuf = MALLOC(writeNum);
+			} else {
+				char c = '\0';
+				writeBuf = &c;
+			}
 			int posw = 0;
 			it = int64map_new_iterator(_st_nodeid_info_map);
 			while ((nodeInfoIter=int64map_next(it, &key))) {
@@ -846,6 +854,10 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			iov[1].iov_base = writeBuf;
 			iov[1].iov_len = writeNum;
 			st_writev(soc, iov, 2, ST_UTIME_NO_TIMEOUT);
+
+			// record node info
+			int64map_put(_st_nodeid_info_map, nodeInfo->id, nodeInfo);
+			hashmap_put(_st_nodeurl_info_map, nodeInfo->url, nodeInfo);
 			break;
 		}
 		case NODE_CONN_RESP: {
@@ -861,9 +873,10 @@ static void *_rms_rcv_thread_loop(void *arg) {
 //			}
 
 			int pn = 9;
+			_rms_node_info *nodeInfoIter;
 			_rms_node_info *nitmp;
 			while (pn < dataLen) {
-				nodeInfoIter = MALLOC(sizeof(_rms_node_info));
+				nodeInfoIter = CALLOC(1, sizeof(_rms_node_info));
 				nodeInfoIter->nameLen = get_int16(data + pn);
 				pn += 2;
 				nodeInfoIter->name = str_ndup(data + pn, nodeInfoIter->nameLen);
@@ -881,14 +894,10 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				snprintf(nodeInfoIter->url, nnl, "%s@%s", nodeInfoIter->name, nodeInfoIter->host);
 
 				nitmp = int64map_get(_st_nodeid_info_map, nodeInfoIter->id);
-				if (nitmp) {
-					FREE(nitmp->name);
-					FREE(nitmp->host);
-					FREE(nitmp->url);
-					FREE(nitmp);
+				if (!nitmp) {
+					int64map_put(_st_nodeid_info_map, nodeInfoIter->id, nodeInfoIter);
+					hashmap_put(_st_nodeurl_info_map, nodeInfoIter->url, nodeInfoIter);
 				}
-				int64map_put(_st_nodeid_info_map, nodeInfoIter->id, nodeInfoIter);
-				hashmap_put(_st_nodeurl_info_map, nodeInfoIter->url, nodeInfoIter);
 			}
 			break;
 		}
@@ -927,6 +936,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			//response,  NODE_CONN_RESP
 			int writeNum = 0;	// out data byte size
 			// node info loop
+			_rms_node_info *nodeInfoIter;
 			uint64_t key;
 			int hasTid = 0;
 			int64map_iterator *it = int64map_new_iterator(_st_nodeid_info_map);
@@ -980,15 +990,14 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	connectEnd:
 	FREE(data);
 	st_netfd_close(soc);
-//	if (nodeInfo) {
-		int64map_remove(_st_nodeid_sock_map, nodeInfo->id);
+	if (nodeInfo) {
 		int64map_remove(_st_nodeid_info_map, nodeInfo->id);
 		hashmap_remove(_st_nodeurl_info_map, nodeInfo->url);
 		FREE(nodeInfo->name);
 		FREE(nodeInfo->host);
 		FREE(nodeInfo->url);
 		FREE(nodeInfo);
-//	}
+	}
 	return NULL;
 }
 

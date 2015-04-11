@@ -35,6 +35,9 @@ static void* st_thread_callback_fun(void* arg) {
 	return NULL;
 }
 
+/**
+ * spawn(function/functionName, ...)
+ */
 static int stThreadCreate(lua_State* l) {
 	/* save stack index */
 	int base = lua_gettop(l);
@@ -45,8 +48,30 @@ static int stThreadCreate(lua_State* l) {
 
 	lua_State *tl = lua_newthread(l);
 
-	luaL_argcheck(l, lua_isfunction(l, 1) && !lua_iscfunction(l, 1), 1, "Lua function expected.");
-	lua_pushvalue(l, 1); /* move function to top */
+	if (lua_type(l, 1) == LUA_TSTRING) {	// function name
+		size_t sn = 0;
+		const char *pf = luaL_checklstring(l, 1, &sn);
+		sn++;
+		char *full = MALLOC(sn);
+		memcpy(full, pf, sn);
+		char *funName = strtok(full, ".");
+		lua_getglobal(l, funName);
+		do {
+			funName = strtok(NULL, ".");
+			if (funName) {
+				lua_pushstring(l, funName);
+				lua_rawget(l, -2);
+				lua_remove(l, -2);
+			}
+		} while (funName);
+		FREE(full);
+	} else if (lua_isfunction(l, 1) && !lua_iscfunction(l, 1)) {
+		lua_pushvalue(l, 1); /* move function to top */
+	} else {
+		LOG_WARN("first arg type(%s) error, must be string or lua function.", lua_typename(l, lua_type(l, 1)));
+		lua_pushnil(l);
+		return 1;
+	}
 	lua_xmove(l, tl, 1); /* move function from L to NL */
 
 	/* get ref */

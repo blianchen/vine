@@ -87,59 +87,6 @@
 int main(int argc, char **argv) {
 	exception_init();
 
-
-//int64map_t *map = int64map_create(4);
-//int64map_put(map, 1, "sss");
-//int64map_put(map, 2, "ert");
-//int64map_put(map, 3, "asddd");
-//int64map_put(map, 4, "sss");
-//int64map_put(map, 5, "ert");
-//int64map_put(map, 6, "asddd");
-//int64map_put(map, 7, "sss");
-//int64map_put(map, 8, "ert");
-//int64map_put(map, 9, "asddd");
-//int64map_put(map, 3, "sss");
-//int64map_put(map, 3, "ert");
-//int64map_put(map, 3, "asddd");
-//int64map_put(map, 13, "sss");
-//int64map_put(map, 14, "ert");
-//int64map_put(map, 15, "asddd");
-//int64map_put(map, 16, "sss");
-//int64map_put(map, 17, "ert");
-//int64map_put(map, 18, "asddd");
-//int64map_put(map, 19, "asddd");
-//
-//int size = int64map_size(map);
-//uint64_t *keys = MALLOC();
-//int64map_iterator *it = int64map_new_iterator(map);
-//char *tmp;
-//uint64_t key;
-//while ((tmp=int64map_next(it, &key)) != NULL) {
-//	printf("========iterator: key=%lu, val=%s \n", key, tmp);
-//}
-//int64map_del_iterator(it);
-//
-//printf("==========%s\n", (char*)int64map_get(map, 3));
-//int64map_remove(map, 3);
-//printf("==========%s\n", (char*)int64map_get(map, 3));
-//	loadconfig();
-
-//	ffid_t ffid = ffid_create(5);
-//	int id, i;
-//	for (i=0; i<5; i++) {
-//		id = ffid_getid(ffid);
-//		printf("get i=%i, id=%d \n", i, id);
-//	}
-//	ffid_releaseid(ffid, 3);
-//	ffid_releaseid(ffid, 1);
-//	ffid_releaseid(ffid, 4);
-//	ffid_releaseid(ffid, 2);
-//	ffid_releaseid(ffid, 0);
-//	for (i=0; i<5; i++) {
-//		id = ffid_getid(ffid);
-//		printf("get i=%i, id=%d \n", i, id);
-//	}
-
 	char *nodeName = NULL;
 
 	/*

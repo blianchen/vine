@@ -106,7 +106,7 @@ function luafun()
 --	st.send("tta@bogon", "trcv", "a hhahaha");
 --st.send("tta@127.0.0.1", "trcv", "a hhahaha");
 local ps = pack.pack("a", "b hahaha!!");
-st.send("tta@127.0.0.1", "trcv", ps);
+st.send("tta@bogon", "trcv", ps);
 	
 --	for i=1,1 do
 --		--print("---------spawn " .. i);

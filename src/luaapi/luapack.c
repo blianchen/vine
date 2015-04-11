@@ -8,6 +8,7 @@
  * Roberto Ierusalimschy <roberto@inf.puc-rio.br>.
  */
 
+#define	OP_BOOLEAN	'o'		/* boolean = char */
 #define	OP_ZSTRING	'z'		/* zero-terminated string */
 #define	OP_BSTRING	'p'		/* string preceded by length byte */
 #define	OP_WSTRING	'P'		/* string preceded by length word */
@@ -93,12 +94,21 @@ static void doswap(int swap, void *p, size_t n) {
 	   break;				\
    }
 
-static int l_unpack(lua_State *L) /** unpack(s,f,[init]) */
+static int l_unpack(lua_State *L) /** unpack(s,f,[isReturnInit],[init]) */
 {
 	size_t len;
 	const char *s = luaL_checklstring(L, 1, &len);
 	const char *f = luaL_checkstring(L, 2);
-	int i = luaL_optnumber(L, 3, 1) - 1;
+	int i = 0;
+	int isReturnInit = 1;
+	if (lua_type(L, 3) == LUA_TBOOLEAN) {
+		if (!lua_toboolean(L, 3)) {
+			isReturnInit = 0;
+		}
+		i = luaL_optnumber(L, 4, 1) - 1;
+	} else {
+		i = luaL_optnumber(L, 3, 1) - 1;
+	}
 	int n = 0;
 	int swap = 0;
 	lua_pushnil(L);
@@ -121,6 +131,13 @@ static int l_unpack(lua_State *L) /** unpack(s,f,[init]) */
 			case OP_NATIVE: {
 				swap = doendian(c);
 				N = 0;
+				break;
+			}
+			case OP_BOOLEAN: {
+				if (i+1>len) goto done;
+				lua_pushboolean(L, s[i]);
+				i++;
+				++n;
 				break;
 			}
 			case OP_STRING: {
@@ -146,7 +163,19 @@ static int l_unpack(lua_State *L) /** unpack(s,f,[init]) */
 			UNPACKSTRING(OP_BSTRING, unsigned char)
 			UNPACKSTRING(OP_WSTRING, unsigned short)
 			UNPACKSTRING(OP_SSTRING, size_t)
-			UNPACKNUMBER(OP_NUMBER, lua_Number)
+//			UNPACKNUMBER(OP_NUMBER, lua_Number)
+			   case OP_NUMBER:
+			   {
+				   lua_Number a;
+				   int m=sizeof(a);
+				   if (i+m>len) goto done;
+				   memcpy(&a,s+i,m);
+				   i+=m;
+				   doswap(swap,&a,m);
+				   lua_pushnumber(L,(lua_Number)a);
+				   ++n;
+				   break;
+			   }
 			UNPACKNUMBER(OP_DOUBLE, double)
 			UNPACKNUMBER(OP_FLOAT, float)
 			UNPACKNUMBER(OP_CHAR, char)
@@ -165,9 +194,14 @@ static int l_unpack(lua_State *L) /** unpack(s,f,[init]) */
 				break;
 			}
 	}
-	done: lua_pushnumber(L, i + 1);
-	lua_replace(L, -n - 2);
-	return n + 1;
+	done:
+	if (isReturnInit) {
+		lua_pushnumber(L, i + 1);
+		lua_replace(L, -n - 2);
+		return n + 1;
+	} else {
+		return n;
+	}
 }
 
 #define PACKNUMBER(OP,T)			\
@@ -213,6 +247,11 @@ static int l_pack(lua_State *L) /** pack(f,...) */
 			case OP_NATIVE: {
 				swap = doendian(c);
 				N = 0;
+				break;
+			}
+			case OP_BOOLEAN: {
+				char a=(char)lua_toboolean(L, i++);
+				luaL_addlstring(&b,(void*)&a,sizeof(a));
 				break;
 			}
 			case OP_STRING:
