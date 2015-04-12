@@ -22,6 +22,8 @@
 
 #include <luaapi/luautils.h>
 
+#include <vine.h>
+
 static const char *progname = "vine";
 
 static const luaL_Reg uselualibs[] = {
@@ -156,7 +158,9 @@ static int docall(lua_State *L, int narg, int clear) {
 
 
 static void print_version (void) {
-  l_message(NULL, LUA_RELEASE "  " LUA_COPYRIGHT);
+//	fprintf(stderr, VINE_RELEASE" %d.%d  [with "LUA_RELEASE" "LUA_COPYRIGHT"]\n", V_HIGH, V_LOW);
+//	fflush(stderr);
+  l_message(NULL, VINE_RELEASE "  [with " LUA_RELEASE "  " LUA_COPYRIGHT "]");
 }
 
 

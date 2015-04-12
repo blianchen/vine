@@ -22,6 +22,7 @@
 #include <sc.h>
 
 #include "common.h"
+#include <vine.h>
 
 ////////////// vpmd message codes ///////////////
 /* Definitions of message codes */
@@ -81,6 +82,7 @@ static uint16_t _st_vpmd_listen_port = 1511;
 //static int64map_t _st_nodeid_sock_map;
 static int64map_t _st_nodeid_info_map;
 static hashmap_t _st_nodeurl_info_map;
+static st_netfd_t _rms_vpmd_register_sock;
 
 static char _this_hostname[HOSTNAME_SIZE];
 static char *_st_this_node_name;
@@ -157,6 +159,10 @@ typedef struct {
 	char *host;
 	char *url;
 	st_netfd_t sock;
+	unsigned char nodetype;
+	unsigned char protocol;
+	uint16_t highvsn;
+	uint16_t lowvsn;
 } _rms_node_info;
 
 /* rms = remote message server */
@@ -300,11 +306,13 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 
 		int pos = 2;
 		nodeInfo->port = get_int16(wbuf+pos);
-//		wbuf[4] = node->nodetype;
-//		wbuf[5] = node->protocol;
-//		put_int16(node->highvsn, wbuf + 6);
-//		put_int16(node->lowvsn, wbuf + 8);
-		pos += 6;
+		pos += 2;
+		nodeInfo->nodetype = wbuf[pos++];
+		nodeInfo->protocol = wbuf[pos++];
+		nodeInfo->highvsn = get_int16(wbuf+pos);
+		pos += 2;
+		nodeInfo->lowvsn = get_int16(wbuf+pos);
+		pos += 2;
 		int nl = get_int16(wbuf+pos);
 		pos += nl + 2;
 		int el = get_int16(wbuf+pos);
@@ -624,8 +632,8 @@ static int _rms_create_listen_socket() {
 }
 
 static int _rms_register_node() {
-	st_netfd_t cli_nfd = _rms_connect_to("127.0.0.1", _st_vpmd_listen_port);  // vpmd in localhost
-	if (!cli_nfd) return -1;
+	_rms_vpmd_register_sock = _rms_connect_to("127.0.0.1", _st_vpmd_listen_port);  // vpmd in localhost
+	if (!_rms_vpmd_register_sock) return -1;
 
 	//send rpc server listen port and node name to vpmd
 	int offset = 2;				//2byte header, offset from 2
@@ -633,11 +641,11 @@ static int _rms_register_node() {
 	wbuf[offset++] = EPMD_ALIVE2_REQ;
 	put_int16(_st_rpc_server_listen_port, wbuf + offset);
 	offset += 2;
-	wbuf[offset++] = 77;	// 77 = normal Erlang node
-	wbuf[offset++] = 0;		// 0 = tcp/ip-v4
-	put_int16(5, wbuf + offset);
+	wbuf[offset++] = NODE_TYPE;		// 77 = normal node
+	wbuf[offset++] = PROT_TYPE;		// 0 = tcp/ip-v4
+	put_int16(V_HIGH, wbuf + offset);
 	offset += 2;
-	put_int16(5, wbuf + offset);
+	put_int16(V_LOW, wbuf + offset);
 	offset += 2;
 	put_int16(length_str(_st_this_node_name), wbuf + offset);
 	offset += 2;
@@ -648,18 +656,18 @@ static int _rms_register_node() {
 	offset += 4;
 	// packet len, 2 byte
 	put_int16(offset-2, wbuf);
-	if (st_write(cli_nfd, wbuf, offset, -1) != offset) {
-		st_netfd_close(cli_nfd);
+	if (st_write(_rms_vpmd_register_sock, wbuf, offset, -1) != offset) {
+		st_netfd_close(_rms_vpmd_register_sock);
 		LOG_WARN("st_write error: %s(errno: %d)", getLastErrorText(), getLastError());
 		return -1;
 	}
 
 	//get nodeid from vpmd
 	char rbuf[12];
-	int rn = st_read(cli_nfd, rbuf, 12, -1);
+	int rn = st_read(_rms_vpmd_register_sock, rbuf, 12, -1);
 	if (rn < 12 || rbuf[0] != EPMD_ALIVE2_RESP) {
 		LOG_WARN("st_read error: %s(errno: %d)", getLastErrorText(), getLastError());
-		st_netfd_close(cli_nfd);
+		st_netfd_close(_rms_vpmd_register_sock);
 		return -1;
 	}
 	_st_this_node_id = get_uint64(rbuf + 4);
@@ -667,24 +675,26 @@ static int _rms_register_node() {
 
 	// Create a thread to check the connection be closed.
 	// If the connection be closed, this node unregister from vpmd.
-	st_thread_create(_rms_register_node_loop, cli_nfd, 0, 0);
+	st_thread_create(_rms_register_node_loop, NULL, 0, 0);
 	return 0;
 }
 
 static void *_rms_register_node_loop(void *arg) {
-	st_netfd_t cli_nfd = (st_netfd_t)arg;
+//	st_netfd_t cli_nfd = (st_netfd_t)arg;
 	char rbuf[1];
 	int rn;
 	while (1) {
-		rn = st_read(cli_nfd, rbuf, 1, -1);
+		rn = st_read(_rms_vpmd_register_sock, rbuf, 1, -1);
 		if (rn <= 0) {
 			// connection error or close, re-register node
 			LOG_WARN("connection error or close: %s(errno: %d)", getLastErrorText(), getLastError());
-			st_netfd_close(cli_nfd);
-			while (_rms_register_node()) {
-				st_usleep(10000000);		// 10s
-			}
-			return NULL;
+			break;
+		}
+	}
+	if (_rms_vpmd_register_sock) {
+		st_netfd_close(_rms_vpmd_register_sock);
+		while (_rms_register_node()) {
+			st_usleep(10000000);		// 10s
 		}
 	}
 	return NULL;
@@ -700,11 +710,13 @@ static void *_rms_server_accept_loop(void *arg) {
 		if (st_clifd == NULL) {
 			LOG_WARN("socket accept error: %s(errno: %d)", getLastErrorText(), getLastError());
 			st_netfd_close(st_srvfd);
+			st_netfd_close(_rms_vpmd_register_sock); // close vpmd connect
+			_rms_vpmd_register_sock = NULL;
 			// socket error, current thread termination, try to recreate server
-			st_usleep(5000000);		// 5s
+			st_usleep(5000000);		// 5ms
 			_rms_start_server();
 
-			//TODO the already connected do not destroy
+			//the already connected do not destroy
 			return NULL;
 		}
 
@@ -725,6 +737,10 @@ static void *_rms_server_accept_loop(void *arg) {
  * byte 2			hostLen
  * byte hostLen		host name
  * byte 2			listen port
+ * byte 1			node type
+ * byte 1			protocol type
+ * byte 1			highvsn
+ * byte 1			lowvsn
  *
  * NODE_CONN_RESP
  * byte 1			message code, NODE_CONN_RESP
@@ -736,12 +752,20 @@ static void *_rms_server_accept_loop(void *arg) {
  * byte 2			hostLen
  * byte hostLen		host name
  * byte 2			listen port
+ * byte 1			node type
+ * byte 1			protocol type
+ * byte 1			highvsn
+ * byte 1			lowvsn
  *      .........
  * byte 2			nameLen
  * byte nameLen		node name
  * byte 2			hostLen
  * byte hostLen		host name
  * byte 2			listen port
+ * byte 1			node type
+ * byte 1			protocol type
+ * byte 1			highvsn
+ * byte 1			lowvsn
  *
  * NODE_RPC_MSG
  * byte 1			message code, NODE_RPC_MSG
@@ -805,6 +829,13 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			nodeInfo->host = str_ndup(data+pos, charLen);
 			pos += charLen;
 			nodeInfo->port = get_int16(data+pos);
+			pos += 2;
+			nodeInfo->nodetype = data[pos++];
+			nodeInfo->protocol = data[pos++];
+			nodeInfo->highvsn = get_int16(data+pos);
+			pos += 2;
+			nodeInfo->lowvsn = get_int16(data+pos);
+
 			int nnl = nodeInfo->nameLen + nodeInfo->hostLen + 2;
 			nodeInfo->url = MALLOC(nnl);
 			snprintf(nodeInfo->url, nnl, "%s@%s", nodeInfo->name, nodeInfo->host);
@@ -840,6 +871,12 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				posw += 2;
 				put_uint64(nodeInfoIter->id, writeBuf+posw);
 				posw += 8;
+				data[posw++] = nodeInfo->nodetype;
+				data[posw++] = nodeInfo->protocol;
+				put_int16(nodeInfo->highvsn, writeBuf+posw);
+				posw += 2;
+				put_int16(nodeInfo->lowvsn, writeBuf+posw);
+				posw += 2;
 			}
 			int64map_del_iterator(it);
 			// header
@@ -867,10 +904,6 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			}
 			uint64_t fromNodeId = get_uint64(data+1);
 			nodeInfo = int64map_get(_st_nodeid_info_map, fromNodeId);
-//			if (nodeInfo->id != fromNodeId) {
-//				LOG_WARN("connecting node id error, request id=%lu and response id=%lu", nodeInfo->id, fromNodeId);
-//				goto connectEnd;
-//			}
 
 			int pn = 9;
 			_rms_node_info *nodeInfoIter;
@@ -888,7 +921,12 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				nodeInfoIter->port = get_int16(data + pn);
 				pn += 2;
 				nodeInfoIter->id = get_uint64(data + pn);
-//				pn += 8;
+				pn += 8;
+				nodeInfo->nodetype = data[pn++];
+				nodeInfo->protocol = data[pn++];
+				nodeInfo->highvsn = get_int16(data+pn);
+				pn += 2;
+				nodeInfo->lowvsn = get_int16(data+pn);
 				int nnl = nodeInfoIter->nameLen + nodeInfoIter->hostLen + 2;
 				nodeInfoIter->url = MALLOC(nnl);
 				snprintf(nodeInfoIter->url, nnl, "%s@%s", nodeInfoIter->name, nodeInfoIter->host);
@@ -965,6 +1003,12 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				posw += 2;
 				put_uint64(nodeInfoIter->id, writeBuf+posw);
 				posw += 8;
+				data[posw++] = nodeInfo->nodetype;
+				data[posw++] = nodeInfo->protocol;
+				put_int16(nodeInfo->highvsn, writeBuf+posw);
+				posw += 2;
+				put_int16(nodeInfo->lowvsn, writeBuf+posw);
+				posw += 2;
 			}
 			int64map_del_iterator(it);
 			// header
