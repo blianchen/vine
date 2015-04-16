@@ -146,7 +146,7 @@ extern int st_send_msg_by_name(char *nodeUrl, char *threadName, st_thread_msg_t 
 extern st_thread_msg_t st_recv_msg();
 extern int st_has_msg(st_thread_t thread);
 
-extern st_thread_msg_t st_create_msg(const char *data, int len);
+extern st_thread_msg_t st_create_msg(const char *data, int len, st_tid_t fromTid);
 extern void st_destroy_msg(st_thread_msg_t msg);
 extern int st_msg_data(st_thread_msg_t msg, char **data);
 extern st_tid_t st_msg_fromtid(st_thread_msg_t msg);

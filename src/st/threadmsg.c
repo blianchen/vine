@@ -91,9 +91,13 @@ static uint64_t _st_this_node_id = 0;
 static int _st_rpc_server_listen_port = 0; // current rpc server accept port, port is random allocation
 
 
-_st_thread_msg_t *st_create_msg(const char *data, int len) {
+_st_thread_msg_t *st_create_msg(const char *data, int len, st_tid_t fromTid) {
 	_st_thread_msg_t *msg = MALLOC(sizeof(_st_thread_msg_t) + len);
-	msg->f_tid = ST_MAKE_TID(_ST_CURRENT_THREAD()->sid);
+//	if (fromTid) {
+		msg->f_tid = fromTid;
+//	} else {
+//		msg->f_tid = ST_MAKE_TID(_ST_CURRENT_THREAD()->sid);
+//	}
 	msg->data = (char*)msg + sizeof(_st_thread_msg_t);
 	msg->len = len;
 	msg->refcnt = 0;
@@ -944,8 +948,8 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			toid = get_uint64(data);
 			fromid = get_uint64(data + 8);
 
-			st_thread_msg_t msg = st_create_msg(data+16, dataLen-16);
-			msg->f_tid = fromid;
+			st_thread_msg_t msg = st_create_msg(data+16, dataLen-16, fromid);
+//			msg->f_tid = fromid;
 			st_thread_t tothread = st_get_thread(toid);
 			if (tothread)
 				st_send_msg(tothread, msg);
@@ -960,8 +964,8 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			toid = st_get_reg_tid(threadName);
 			fromid = get_uint64(data + 2 + tnlen);
 
-			st_thread_msg_t msg = st_create_msg(data + 10 + tnlen, dataLen - 10 - tnlen);
-			msg->f_tid = fromid;
+			st_thread_msg_t msg = st_create_msg(data + 10 + tnlen, dataLen - 10 - tnlen, fromid);
+//			msg->f_tid = fromid;
 			st_thread_t tothread = st_get_thread(toid);
 			if (tothread)
 				st_send_msg(tothread, msg);

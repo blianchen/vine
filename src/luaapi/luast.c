@@ -132,12 +132,18 @@ static int stUstime(lua_State* l) {
 	return 1;
 }
 
-static int stSend(lua_State *l) {
+static int stSend(lua_State *l) {	//send(toTid, msg [,fromTid]), send(node, threadName, msg [,fromTid])
 	if (lua_type(l, 1) == LUA_TNUMBER) {
 		st_tid_t tid = luaL_checknumber(l, 1);
 		size_t len;
 		const char *buf = luaL_checklstring(l, 2, &len);
-		st_thread_msg_t msg = st_create_msg(buf, len);
+		st_tid_t fromTid;
+		if (lua_gettop(l) > 2) {
+			fromTid = luaL_checknumber(l, 3);
+		} else {
+			fromTid = st_get_tid(st_thread_self());
+		}
+		st_thread_msg_t msg = st_create_msg(buf, len, fromTid);
 		if (ST_IS_INTERNAL(tid)) {
 			st_thread_t thread = st_get_thread(tid);
 			if (thread)
@@ -153,7 +159,13 @@ static int stSend(lua_State *l) {
 		char *threadName = luaL_checkstring(l, 2);
 		size_t len;
 		const char *buf = luaL_checklstring(l, 3, &len);
-		st_thread_msg_t msg = st_create_msg(buf, len);
+		st_tid_t fromTid = 0;
+		if (lua_gettop(l) > 3) {
+			fromTid = luaL_checknumber(l, 4);
+		} else {
+			fromTid = st_get_tid(st_thread_self());
+		}
+		st_thread_msg_t msg = st_create_msg(buf, len, fromTid);
 		st_send_msg_by_name(nodeUrl, threadName, msg);
 	} else {
 		LOG_WARN("parameter error.");
@@ -161,12 +173,18 @@ static int stSend(lua_State *l) {
 	return 0;
 }
 
-static int stSendMulti(lua_State *l) {
+static int stSendMulti(lua_State *l) { // send_multi(tidsTable, msg [,fromId])
 	luaL_checktype(l, 1, LUA_TTABLE);
 
 	size_t buflen;
 	const char *buf = luaL_checklstring(l, 2, &buflen);
-	st_thread_msg_t msg = st_create_msg(buf, buflen);
+	st_tid_t fromTid = 0;
+	if (lua_gettop(l) > 2) {
+		fromTid = luaL_checknumber(l, 3);
+	} else {
+		fromTid = st_get_tid(st_thread_self());
+	}
+	st_thread_msg_t msg = st_create_msg(buf, buflen, fromTid);
 
 	int len = lua_objlen(l, 1);
 	st_tid_t *nodeTids = CALLOC(len, sizeof(st_tid_t));

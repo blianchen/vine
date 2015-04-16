@@ -35,7 +35,7 @@ all: vine
 vine: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/blc/c/score/libs" -lpthread -lm -ldl -lhiredis -lpq -o "vine" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -lpthread -lm -ldl -lhiredis -lpq -lcheck -o "vine" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
