@@ -44,9 +44,10 @@ extern "C" {
 
 // tid, use in thread message. add by blc
 typedef uint64_t st_tid_t;  /* tid = sid(int14) + nodeid(int50);  nodeid = nodesid(int8) + vpmdid(int42) */
+#define ST_MAKE_TID_NID(sid, nodeid)	( ((uint64_t)(sid) << 50) | nodeid )
 #define ST_MAKE_TID(sid)	( ((uint64_t)(sid) << 50) | st_get_this_node_id() )
 #define ST_NODEID(tid) 		( (tid) & 0x3FFFFFFFFFFFF )
-#define ST_SID(tid) 		( ((tid) >> 50) & 0x3fff )
+#define ST_SID(tid) 		( ((uint64_t)(tid) >> 50) & 0x3fff )
 #define ST_IS_INTERNAL(tid)	( ST_NODEID(tid) == st_get_this_node_id() )
 
 typedef struct _st_thread_msg * st_thread_msg_t;
@@ -135,6 +136,7 @@ extern st_netfd_t st_open(const char *path, int oflags, mode_t mode);
 //////////////// thread message, add by blc
 extern st_thread_t st_get_thread(st_tid_t tid);
 extern st_tid_t st_get_tid(st_thread_t thread);
+extern int st_get_sid(st_thread_t thread);
 extern int st_reg_tid(char *name, st_tid_t tid);
 extern int st_unreg_tid(char *name);
 extern char** st_get_reg_names();

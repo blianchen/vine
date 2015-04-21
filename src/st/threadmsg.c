@@ -209,6 +209,7 @@ static int copy_str(char *x, char *y) {
 }
 
 int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
+	printf("st_send_msg_by_tid start... tid=%lu{%lu,%d}\n",tid, ST_NODEID(tid), ST_SID(tid));
 	// to another node
 	if (_st_nodeid_info_map == NULL) {
 		LOG_WARN("This node has not init rpc, can't send message in nodes.");
@@ -222,6 +223,7 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
 		while (_rms_find_nodeinfo(nodeid, &nodeinfo) && loopn > 0) {
 			loopn--;
 		}
+		printf("st_send_msg_by_tid node info = tid=%lu{%lu,%d}\n",tid, ST_NODEID(tid), ST_SID(tid));
 		if (nodeinfo == NULL) {
 			LOG_WARN("Don't find nodeid:%lu", nodeid);
 			return -1;
@@ -255,6 +257,7 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
  * nodeUrl = nodeName@hostName
  */
 int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) {
+	printf("st_send_msg_by_name start... uri=%s,threadName=%s\n",nodeUri,threadName);
 	if (_st_nodeurl_info_map == NULL) {
 		LOG_WARN("This node has not init rpc, can't send message in nodes.");
 		return -1;
@@ -306,7 +309,6 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 		nodeInfo->hostLen = length_str(hostName);
 		nodeInfo->host = str_dup(hostName);
 		nodeInfo->url = str_dup(nodeUri);
-//		nodeInfo->thread = NULL;
 
 		int pos = 2;
 		nodeInfo->port = get_int16(wbuf+pos);
@@ -323,11 +325,14 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 		pos += el + 2;
 		nodeInfo->id = get_uint64(wbuf+pos);
 
+		printf("st_send_msg_by_name vpmd resp ... host=%s, port=%d, nodeid=%lu\n",nodeInfo->host, nodeInfo->port,nodeInfo->id);
+
 		int64map_put(_st_nodeid_info_map, nodeInfo->id, nodeInfo);
 		hashmap_put(_st_nodeurl_info_map, nodeInfo->url, nodeInfo);
 	}
 
 	if (nodeInfo->sock == NULL) {
+		printf("st_send_msg_by_name connect to ... host=%s, port=%d\n",nodeInfo->host, nodeInfo->port);
 		// create a connect to the node
 		nodeInfo->sock = _rms_connect_to(nodeInfo->host, nodeInfo->port);
 		if (nodeInfo->sock == NULL) return 1;	//error
@@ -394,7 +399,7 @@ static st_netfd_t _rms_connect_to(char *addr, int port) {
 	}
 
 	int n = 1, ir;
-	ir = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n));
+//	ir = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&n, sizeof(n));
 	ir = setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char *)&n, sizeof(n));
 	if (ir < 0) {
 		close(sock);
@@ -418,6 +423,7 @@ static st_netfd_t _rms_connect_to(char *addr, int port) {
 
 
 static int _rms_send_conn_req(st_netfd_t sock) {
+	printf("_rms_send_conn_req  %s, %s, %lu \n", _st_this_node_name, _this_hostname, _st_this_node_id);
 	char dataBuf[MAXSYMLEN * 2];
 	int pos = 0, len;
 	put_uint64(_st_this_node_id, dataBuf);
@@ -674,7 +680,7 @@ static int _rms_register_node() {
 		st_netfd_close(_rms_vpmd_register_sock);
 		return -1;
 	}
-	_st_this_node_id = get_uint64(rbuf + 4);
+	_st_this_node_id = get_uint64(rbuf + 4) & 0x3FFFFFFFFFFFF;
 	LOG_INFO("Rpc node register finish, node name = %s and node id = %lu.", _st_this_node_name, _st_this_node_id);
 
 	// Create a thread to check the connection be closed.
@@ -786,6 +792,12 @@ static void *_rms_server_accept_loop(void *arg) {
 static void *_rms_rcv_thread_loop(void *arg) {
 	st_netfd_t soc = (st_netfd_t) arg;
 
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(addr);
+	memset(&addr, 0, sizeof(addr));
+	getsockname(soc->osfd, (struct sockaddr *)&addr, &addrlen);
+	printf("_rms_rcv_thread_loop addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+
 	_rms_node_info *nodeInfo = NULL;
 
 	char readBuf[INBUF_SIZE];
@@ -797,6 +809,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	while ((rn = _read_bytes(soc, readBuf, 3)) > 0) {
 		msgcode = readBuf[0];
 		dataLen = get_int16(readBuf+1);
+		printf("_rms_rcv_thread_loop  recv msgcode=%d, len=%d\n", msgcode, dataLen);
 		// message data
 		if (dataLen > buflen) {
 			REALLOC(data, dataLen);
@@ -954,7 +967,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			if (tothread)
 				st_send_msg(tothread, msg);
 			else
-				LOG_WARN("thread no found, toid=%lu, fromid=%lu", toid, fromid);
+				LOG_WARN("thread no found, toid=%lu{%lu,%d}, fromid=%lu{%lu,%d}", toid, ST_NODEID(toid), ST_SID(toid), fromid, ST_NODEID(fromid), ST_SID(fromid));
 			break;
 		}
 		case NODE_RPC_MSG_NAME: {
@@ -970,7 +983,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			if (tothread)
 				st_send_msg(tothread, msg);
 			else
-				LOG_WARN("thread no found, toThreadName=%s, fromid=%lu", threadName, fromid);
+				LOG_WARN("thread no found, toThreadName=%s, fromid=%lu{%lu,%d}", threadName, fromid, ST_NODEID(fromid), ST_SID(fromid));
 			break;
 		}
 		case NODE_FINDID_REQ: {
@@ -1035,6 +1048,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	}
 	// connect close or error
 //	LOG_WARN("connection error: %s(errno: %d)", getLastErrorText(), getLastError());
+	printf("_rms_rcv_thread_loop  thread end. addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	connectEnd:
 	FREE(data);
 	st_netfd_close(soc);

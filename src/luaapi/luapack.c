@@ -8,6 +8,7 @@
  * Roberto Ierusalimschy <roberto@inf.puc-rio.br>.
  */
 
+#define	OP_TID	't'			/* thread id = uint64 */
 #define	OP_BOOLEAN	'o'		/* boolean = char */
 #define	OP_ZSTRING	'z'		/* zero-terminated string */
 #define	OP_BSTRING	'p'		/* string preceded by length byte */
@@ -32,6 +33,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <st/st.h>
 #include <luaapi/luapack.h>
 
 static void badcode(lua_State *L, int c) {
@@ -133,6 +135,24 @@ static int l_unpack(lua_State *L) /** unpack(s,f,[isReturnInit],[init]) */
 				N = 0;
 				break;
 			}
+			case OP_TID:
+		    {
+		    	unsigned long a;
+			    int m=sizeof(a);
+			    if (i+m>len) goto done;
+			    memcpy(&a,s+i,m);
+			    i+=m;
+			    doswap(swap,&a,m);
+				lua_newtable(L);
+				lua_pushinteger(L, 1);
+				lua_pushinteger(L, ST_NODEID(a));
+				lua_rawset(L, -3);
+				lua_pushinteger(L, 2);
+				lua_pushinteger(L, ST_SID(a));
+				lua_rawset(L, -3);
+			    ++n;
+			    break;
+		    }
 			case OP_BOOLEAN: {
 				if (i+1>len) goto done;
 				lua_pushboolean(L, s[i]);
@@ -163,19 +183,7 @@ static int l_unpack(lua_State *L) /** unpack(s,f,[isReturnInit],[init]) */
 			UNPACKSTRING(OP_BSTRING, unsigned char)
 			UNPACKSTRING(OP_WSTRING, unsigned short)
 			UNPACKSTRING(OP_SSTRING, size_t)
-//			UNPACKNUMBER(OP_NUMBER, lua_Number)
-			   case OP_NUMBER:
-			   {
-				   lua_Number a;
-				   int m=sizeof(a);
-				   if (i+m>len) goto done;
-				   memcpy(&a,s+i,m);
-				   i+=m;
-				   doswap(swap,&a,m);
-				   lua_pushnumber(L,(lua_Number)a);
-				   ++n;
-				   break;
-			   }
+			UNPACKNUMBER(OP_NUMBER, lua_Number)
 			UNPACKNUMBER(OP_DOUBLE, double)
 			UNPACKNUMBER(OP_FLOAT, float)
 			UNPACKNUMBER(OP_CHAR, char)
@@ -247,6 +255,19 @@ static int l_pack(lua_State *L) /** pack(f,...) */
 			case OP_NATIVE: {
 				swap = doendian(c);
 				N = 0;
+				break;
+			}
+			case OP_TID: {
+				lua_rawgeti(L, i, 1);
+				unsigned long nodeid = luaL_checkinteger(L, -1);
+				lua_pop(L, 1);
+				lua_rawgeti(L, i, 2);
+				int sid = luaL_checkinteger(L, -1);
+				lua_pop(L, 1);
+				unsigned long tid = ST_MAKE_TID_NID(sid, nodeid);
+				doswap(swap,&tid,sizeof(tid));
+				luaL_addlstring(&b,(void*)&tid,sizeof(tid));
+				i++;
 				break;
 			}
 			case OP_BOOLEAN: {

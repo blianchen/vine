@@ -26,12 +26,16 @@ time_t _st_curr_time = 0;       /* Current time as returned by time(2) */
 st_utime_t _st_last_tset;       /* Last time it was fetched */
 
 
+int st_get_sid(st_thread_t thread) {
+	return thread->sid;
+}
+
 _st_thread_t *st_get_thread(st_tid_t tid) {
 	return intmap_get(_st_thread_id_map, ST_SID(tid));
 }
 
 st_tid_t st_get_tid(_st_thread_t *thread) {
-	return ST_MAKE_TID(thread->sid);
+	return thread->tid;	//ST_MAKE_TID(thread->sid);
 }
 
 int st_reg_tid(char *name, st_tid_t tid) {
@@ -602,6 +606,7 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg, int joinabl
 	mq->prev = mq;
 	thread->msg_q = mq;
 	thread->sid = ffid_getid(_st_thread_sid);
+	thread->tid = ST_MAKE_TID(thread->sid);
 	intmap_put(_st_thread_id_map, thread->sid, thread);
 
 #ifndef __ia64__

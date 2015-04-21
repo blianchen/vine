@@ -161,7 +161,8 @@ struct _st_thread {
   int heap_index;
 
   // message queue // blc add
-  uint16_t sid;			/* thread id */
+  uint16_t sid;					/* thread series number */
+  st_tid_t tid;					/* thread id */
   _st_thread_msg_queue_t *msg_q;  /* thread message queue */
   char *reg_name;
 
