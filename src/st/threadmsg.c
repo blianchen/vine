@@ -232,6 +232,7 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
 		// create a connect to the node
 		nodeinfo->sock = _rms_connect_to(nodeinfo->host, nodeinfo->port);
 		if (nodeinfo->sock == NULL) return -1;	//error
+		st_netfd_setspecific(nodeinfo->sock, &(nodeinfo->id), NULL);
 
 		// send NODE_CONN_REQ
 		_rms_send_conn_req(nodeinfo->sock);
@@ -257,7 +258,7 @@ int st_send_msg_by_tid(st_tid_t tid, _st_thread_msg_t *msg) {
  * nodeUrl = nodeName@hostName
  */
 int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) {
-	printf("st_send_msg_by_name start... uri=%s,threadName=%s\n",nodeUri,threadName);
+//	printf("st_send_msg_by_name start... uri=%s,threadName=%s\n",nodeUri,threadName);
 	if (_st_nodeurl_info_map == NULL) {
 		LOG_WARN("This node has not init rpc, can't send message in nodes.");
 		return -1;
@@ -325,17 +326,18 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 		pos += el + 2;
 		nodeInfo->id = get_uint64(wbuf+pos);
 
-		printf("st_send_msg_by_name vpmd resp ... host=%s, port=%d, nodeid=%lu\n",nodeInfo->host, nodeInfo->port,nodeInfo->id);
+//		printf("st_send_msg_by_name vpmd resp ... host=%s, port=%d, nodeid=%lu\n",nodeInfo->host, nodeInfo->port,nodeInfo->id);
 
 		int64map_put(_st_nodeid_info_map, nodeInfo->id, nodeInfo);
 		hashmap_put(_st_nodeurl_info_map, nodeInfo->url, nodeInfo);
 	}
 
 	if (nodeInfo->sock == NULL) {
-		printf("st_send_msg_by_name connect to ... host=%s, port=%d\n",nodeInfo->host, nodeInfo->port);
+//		printf("st_send_msg_by_name connect to ... host=%s, port=%d\n",nodeInfo->host, nodeInfo->port);
 		// create a connect to the node
 		nodeInfo->sock = _rms_connect_to(nodeInfo->host, nodeInfo->port);
 		if (nodeInfo->sock == NULL) return 1;	//error
+		st_netfd_setspecific(nodeInfo->sock, &(nodeInfo->id), NULL);
 
 		// send NODE_CONN_REQ
 		_rms_send_conn_req(nodeInfo->sock);
@@ -423,7 +425,7 @@ static st_netfd_t _rms_connect_to(char *addr, int port) {
 
 
 static int _rms_send_conn_req(st_netfd_t sock) {
-	printf("_rms_send_conn_req  %s, %s, %lu \n", _st_this_node_name, _this_hostname, _st_this_node_id);
+//	printf("_rms_send_conn_req  %s, %s, %lu \n", _st_this_node_name, _this_hostname, _st_this_node_id);
 	char dataBuf[MAXSYMLEN * 2];
 	int pos = 0, len;
 	put_uint64(_st_this_node_id, dataBuf);
@@ -474,7 +476,7 @@ static int _rms_find_nodeinfo(uint64_t nodeid, _rms_node_info **nodeinfo) {
 	uint64_t key;
 	int64map_iterator *it = int64map_new_iterator(_st_nodeid_info_map);
 	while ((nodeInfo=int64map_next(it, &key))) {
-		if (key == nodeInfo->id) {
+		if (nodeid == nodeInfo->id) {
 			*nodeinfo = nodeInfo;
 			return 0;
 		}
@@ -487,7 +489,7 @@ static int _rms_find_nodeinfo(uint64_t nodeid, _rms_node_info **nodeinfo) {
 	st_usleep(30000);	// sleep 30ms, and retry find
 	it = int64map_new_iterator(_st_nodeid_info_map);
 	while ((nodeInfo=int64map_next(it, &key))) {
-		if (key == nodeInfo->id) {
+		if (nodeid == nodeInfo->id) {
 			*nodeinfo = nodeInfo;
 			return 0;
 		}
@@ -730,6 +732,7 @@ static void *_rms_server_accept_loop(void *arg) {
 			return NULL;
 		}
 
+		st_netfd_setspecific(st_clifd, NULL, NULL);
 		// rpc connect thread
 		st_thread_create(_rms_rcv_thread_loop, st_clifd, 0, 0);
 	}
@@ -791,14 +794,16 @@ static void *_rms_server_accept_loop(void *arg) {
  */
 static void *_rms_rcv_thread_loop(void *arg) {
 	st_netfd_t soc = (st_netfd_t) arg;
+	uint64_t soc_to_nodeid = 0;
+	if (st_netfd_getspecific(soc) != NULL) {
+		soc_to_nodeid = *st_netfd_getspecific(soc);
+	}
 
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	memset(&addr, 0, sizeof(addr));
 	getsockname(soc->osfd, (struct sockaddr *)&addr, &addrlen);
-	printf("_rms_rcv_thread_loop addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-
-	_rms_node_info *nodeInfo = NULL;
+//	printf("_rms_rcv_thread_loop addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	char readBuf[INBUF_SIZE];
 	// read loop
@@ -809,7 +814,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	while ((rn = _read_bytes(soc, readBuf, 3)) > 0) {
 		msgcode = readBuf[0];
 		dataLen = get_int16(readBuf+1);
-		printf("_rms_rcv_thread_loop  recv msgcode=%d, len=%d\n", msgcode, dataLen);
+//		printf("_rms_rcv_thread_loop  recv msgcode=%d, len=%d\n", msgcode, dataLen);
 		// message data
 		if (dataLen > buflen) {
 			REALLOC(data, dataLen);
@@ -823,17 +828,17 @@ static void *_rms_rcv_thread_loop(void *arg) {
 
 		switch (msgcode) {
 		case NODE_CONN_REQ: {
-			if (nodeInfo) {
-				FREE(nodeInfo->name);
-				FREE(nodeInfo->host);
-				FREE(nodeInfo->url);
-				if (nodeInfo->sock) st_netfd_close(nodeInfo->sock);
-				FREE(nodeInfo);
-			}
-			nodeInfo = CALLOC(1, sizeof(_rms_node_info));
+//			if (nodeInfo) {
+//				FREE(nodeInfo->name);
+//				FREE(nodeInfo->host);
+//				FREE(nodeInfo->url);
+//				if (nodeInfo->sock) st_netfd_close(nodeInfo->sock);
+//				FREE(nodeInfo);
+//			}
+			_rms_node_info *nodeInfo = CALLOC(1, sizeof(_rms_node_info));
 
 			int pos = 0;
-			nodeInfo->id = get_uint64(data);
+			nodeInfo->id = soc_to_nodeid = get_uint64(data);
 			pos += 8;
 			int charLen = get_int16(data+pos);
 			pos += 2;
@@ -865,7 +870,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			uint64_t key;
 			int64map_iterator *it = int64map_new_iterator(_st_nodeid_info_map);
 			while ((nodeInfoIter=int64map_next(it, &key))) {
-				writeNum += nodeInfoIter->nameLen + nodeInfoIter->hostLen + 4;
+				writeNum += nodeInfoIter->nameLen + nodeInfoIter->hostLen + 4 + 16;
 			}
 			int64map_del_iterator(it);
 			char *writeBuf;
@@ -920,7 +925,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				goto connectEnd;
 			}
 			uint64_t fromNodeId = get_uint64(data+1);
-			nodeInfo = int64map_get(_st_nodeid_info_map, fromNodeId);
+//			nodeInfo = int64map_get(_st_nodeid_info_map, fromNodeId);
 
 			int pn = 9;
 			_rms_node_info *nodeInfoIter;
@@ -939,17 +944,23 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				pn += 2;
 				nodeInfoIter->id = get_uint64(data + pn);
 				pn += 8;
-				nodeInfo->nodetype = data[pn++];
-				nodeInfo->protocol = data[pn++];
-				nodeInfo->highvsn = get_int16(data+pn);
+				nodeInfoIter->nodetype = data[pn++];
+				nodeInfoIter->protocol = data[pn++];
+				nodeInfoIter->highvsn = get_int16(data+pn);
 				pn += 2;
-				nodeInfo->lowvsn = get_int16(data+pn);
+				nodeInfoIter->lowvsn = get_int16(data+pn);
+				pn += 2;
 				int nnl = nodeInfoIter->nameLen + nodeInfoIter->hostLen + 2;
 				nodeInfoIter->url = MALLOC(nnl);
 				snprintf(nodeInfoIter->url, nnl, "%s@%s", nodeInfoIter->name, nodeInfoIter->host);
 
 				nitmp = int64map_get(_st_nodeid_info_map, nodeInfoIter->id);
-				if (!nitmp) {
+				if (nitmp || nodeInfoIter->id == _st_this_node_id) {
+					FREE(nodeInfoIter->name);
+					FREE(nodeInfoIter->host);
+					FREE(nodeInfoIter->url);
+					FREE(nodeInfoIter);
+				} else {
 					int64map_put(_st_nodeid_info_map, nodeInfoIter->id, nodeInfoIter);
 					hashmap_put(_st_nodeurl_info_map, nodeInfoIter->url, nodeInfoIter);
 				}
@@ -962,7 +973,6 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			fromid = get_uint64(data + 8);
 
 			st_thread_msg_t msg = st_create_msg(data+16, dataLen-16, fromid);
-//			msg->f_tid = fromid;
 			st_thread_t tothread = st_get_thread(toid);
 			if (tothread)
 				st_send_msg(tothread, msg);
@@ -978,7 +988,6 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			fromid = get_uint64(data + 2 + tnlen);
 
 			st_thread_msg_t msg = st_create_msg(data + 10 + tnlen, dataLen - 10 - tnlen, fromid);
-//			msg->f_tid = fromid;
 			st_thread_t tothread = st_get_thread(toid);
 			if (tothread)
 				st_send_msg(tothread, msg);
@@ -987,7 +996,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			break;
 		}
 		case NODE_FINDID_REQ: {
-			uint64_t findNid = get_uint64(data);//ST_NODEID(findTid);
+			uint64_t findNid = get_uint64(data);
 			//response,  NODE_CONN_RESP
 			int writeNum = 0;	// out data byte size
 			// node info loop
@@ -996,7 +1005,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			int hasTid = 0;
 			int64map_iterator *it = int64map_new_iterator(_st_nodeid_info_map);
 			while ((nodeInfoIter=int64map_next(it, &key))) {
-				writeNum += nodeInfoIter->nameLen + nodeInfoIter->hostLen + 4;
+				writeNum += nodeInfoIter->nameLen + nodeInfoIter->hostLen + 4 + 16;
 				if (nodeInfoIter->id == findNid) hasTid = 1;
 			}
 			int64map_del_iterator(it);
@@ -1020,22 +1029,23 @@ static void *_rms_rcv_thread_loop(void *arg) {
 				posw += 2;
 				put_uint64(nodeInfoIter->id, writeBuf+posw);
 				posw += 8;
-				data[posw++] = nodeInfo->nodetype;
-				data[posw++] = nodeInfo->protocol;
-				put_int16(nodeInfo->highvsn, writeBuf+posw);
+				data[posw++] = nodeInfoIter->nodetype;
+				data[posw++] = nodeInfoIter->protocol;
+				put_int16(nodeInfoIter->highvsn, writeBuf+posw);
 				posw += 2;
-				put_int16(nodeInfo->lowvsn, writeBuf+posw);
+				put_int16(nodeInfoIter->lowvsn, writeBuf+posw);
 				posw += 2;
 			}
 			int64map_del_iterator(it);
 			// header
 			unsigned char hb[4];
 			hb[0] = NODE_CONN_RESP;
-			put_int16(writeNum, hb+1);
+			put_int16(writeNum+9, hb+1);
 			hb[3] = 0;	//success code	//TODO when 1, error message
+			put_uint64(_st_this_node_id, hb+4); // write this node id
 			struct iovec iov[2];
 			iov[0].iov_base = hb;
-			iov[0].iov_len = 4;
+			iov[0].iov_len = 12;
 			iov[1].iov_base = writeBuf;
 			iov[1].iov_len = writeNum;
 			st_writev(soc, iov, 2, ST_UTIME_NO_TIMEOUT);
@@ -1048,12 +1058,13 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	}
 	// connect close or error
 //	LOG_WARN("connection error: %s(errno: %d)", getLastErrorText(), getLastError());
-	printf("_rms_rcv_thread_loop  thread end. addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+//	printf("_rms_rcv_thread_loop  thread end. addr: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	connectEnd:
 	FREE(data);
 	st_netfd_close(soc);
+	_rms_node_info *nodeInfo = int64map_get(_st_nodeid_info_map, soc_to_nodeid);
 	if (nodeInfo) {
-		int64map_remove(_st_nodeid_info_map, nodeInfo->id);
+		int64map_remove(_st_nodeid_info_map, soc_to_nodeid);
 		hashmap_remove(_st_nodeurl_info_map, nodeInfo->url);
 		FREE(nodeInfo->name);
 		FREE(nodeInfo->host);

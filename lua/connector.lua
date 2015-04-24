@@ -6,7 +6,7 @@ playeridDic = {};
 
 function proclient(clientSock)
 	local ip, port = net.getraddr(clientSock);
-	print("-------------accept a client: " .. ip .. ":" .. port);
+	--print("-------------accept a client: " .. ip .. ":" .. port);
 --	sessionDic[clientSock] = {ip=ip, port=port, sock=clientSock};
 	local selfTid = st.tid();
 	local playerid;
@@ -27,14 +27,14 @@ function proclient(clientSock)
 						break;
 					end
 				else 
-					print(srvmsg);
+--					print(srvmsg);
 					net.write(clientSock, srvmsg);
 --					net.close(clientSock)
 --					return;
 				end
 			end
 		end);
-	print("-------------rcvTid: ", st.tostring(rcvTid));
+--	print("-------------rcvTid: ", st.tostring(rcvTid));
 --	playeridDic[playerid] = {playerid=playerid, sock=clientSock, tid=selfTid, recvTid=rcvTid};
 	
 	-- rcv client message
@@ -42,21 +42,21 @@ function proclient(clientSock)
 	while true do
 		n, msg = net.read(clientSock);
 		if n <= 0 then
-			print("------------- close......");
+		--	print("------------- close......");
 --			sessionDic[clientSock] = nil;
 			net.close(clientSock);
 --			playeridDic[playerid] = nil;
 			-- close recv thread
-			print("-------------send rcvTid: ", st.tostring(rcvTid));
+--			print("-------------send rcvTid: ", st.tostring(rcvTid));
 			st.send(rcvTid, "close");
 			return;
 		end
-		print("---------read from socket byte n==" .. n .. ", msg=" .. msg);
+--		print("---------read from socket byte n==" .. n .. ", msg=" .. msg);
 --		net.write(clientSock, resp);
 --		n, cmd = pack.unpack(msg, "b");
 --		if cmd < 128 then 
 			st.send("game1@127.0.0.1", "logicsrv", "test", rcvTid);
-			print("---------send game1");
+--			print("---------send game1");
 --    net.write(clientSock, resp);
 --		elseif cmd < 160 then
 --			st.send("game1@127.0.0.1", "chatsrv", msg);
