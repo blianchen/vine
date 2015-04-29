@@ -279,6 +279,7 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 		}
 		if (hostName == NULL) {
 			LOG_WARN("node format error. (%s)", nodeUrl);
+			FREE(nodeUrl);
 			return -1;
 		}
 
@@ -295,13 +296,22 @@ int st_send_msg_by_name(char *nodeUri, char *threadName, _st_thread_msg_t *msg) 
 		st_write(vsock, wbuf, nameLen+3, ST_UTIME_NO_TIMEOUT);
 
 		int n = st_read(vsock, wbuf, 2+MAXSYMLEN, ST_UTIME_NO_TIMEOUT);
-		if (n < 3) {
+		if (n < 2) {
 			// net error
 			LOG_WARN("recv vpmd message error. ");
+			FREE(nodeUrl);
+			return -1;
 		}
 		if (wbuf[0] != EPMD_PORT2_RESP || wbuf[1]) {
 			// message error
 			LOG_WARN("recv vpmd message error. ");
+			FREE(nodeUrl);
+			return -1;
+		}
+		if (wbuf[1]) {
+			LOG_WARN("failed to find node(%s). ", nodeUri);
+			FREE(nodeUrl);
+			return -1;
 		}
 
 		nodeInfo = CALLOC(1, sizeof(_rms_node_info));
@@ -796,7 +806,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 	st_netfd_t soc = (st_netfd_t) arg;
 	uint64_t soc_to_nodeid = 0;
 	if (st_netfd_getspecific(soc) != NULL) {
-		soc_to_nodeid = *st_netfd_getspecific(soc);
+		soc_to_nodeid = *(uint64_t*)st_netfd_getspecific(soc);
 	}
 
 	struct sockaddr_in addr;
@@ -1038,7 +1048,7 @@ static void *_rms_rcv_thread_loop(void *arg) {
 			}
 			int64map_del_iterator(it);
 			// header
-			unsigned char hb[4];
+			unsigned char hb[12];
 			hb[0] = NODE_CONN_RESP;
 			put_int16(writeNum+9, hb+1);
 			hb[3] = 0;	//success code	//TODO when 1, error message
