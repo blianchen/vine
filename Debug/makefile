@@ -14,7 +14,6 @@ RM := rm -rf
 -include src/db/postgresql/subdir.mk
 -include src/db/subdir.mk
 -include src/subdir.mk
--include libs/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -35,7 +34,7 @@ all: vine
 vine: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -lpthread -lm -ldl -lhiredis -lpq -lcheck -o "vine" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/blc/c/vine/deps/lua/src" -lpthread -lm -ldl -lhiredis -lpq -lcheck -o "vine" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -12,8 +12,8 @@
 #include <logger.h>
 #include <mem.h>
 
-#include <lauxlib.h>
-#include <lualib.h>
+//#include <lauxlib.h>
+//#include <lualib.h>
 
 #include <luaapi/luast.h>
 #include <luaapi/luadb.h>
@@ -69,6 +69,14 @@ void call_lua_fun(lua_State* l, int nargs, int nresults) {
 		log_warn(str);
 	}
 }
+
+
+#define lua_readline(L,b,p)	\
+	((void)L, fputs(p, stdout), fflush(stdout),  /* show prompt */ \
+	fgets(b, LUA_MAXINPUT, stdin) != NULL)  /* get line */
+#define lua_saveline(L,idx)	{ (void)L; (void)idx; }
+#define lua_freeline(L,b)	{ (void)L; (void)b; }
+#define lua_stdin_is_tty()	1  /* assume stdin is a tty */
 
 
 //static void lstop (lua_State *L, lua_Debug *ar) {

@@ -1,3 +1,3 @@
-src/cJSON.d: ../src/cJSON.c /home/blc/c/score/include/cJSON.h
+src/cJSON.d: ../src/cJSON.c /home/blc/c/vine/include/cJSON.h
 
-/home/blc/c/score/include/cJSON.h:
+/home/blc/c/vine/include/cJSON.h:

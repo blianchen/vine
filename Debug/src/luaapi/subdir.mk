@@ -29,7 +29,7 @@ C_DEPS += \
 src/luaapi/%.o: ../src/luaapi/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -DLINUX -DMD_HAVE_EPOLL -Dlua_c -I"/home/blc/c/score/include" -I"/home/blc/c/score/libs" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -DLINUX -DMD_HAVE_EPOLL -I"/home/blc/c/vine/include" -I"/home/blc/c/vine/deps/lua/src" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

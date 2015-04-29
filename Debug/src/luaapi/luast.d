@@ -1,35 +1,37 @@
-src/luaapi/luast.d: ../src/luaapi/luast.c /home/blc/c/score/include/mem.h \
- /home/blc/c/score/include/exception/st_exception.h \
- /home/blc/c/score/include/exception/exception.h \
- /home/blc/c/score/include/logger.h /home/blc/c/score/include/utils.h \
- /home/blc/c/score/include/luaapi/luautils.h /home/blc/c/score/libs/lua.h \
- /home/blc/c/score/libs/luaconf.h \
- /home/blc/c/score/include/luaapi/luast.h \
- /home/blc/c/score/libs/lauxlib.h /home/blc/c/score/libs/lua.h \
- /home/blc/c/score/libs/lualib.h /home/blc/c/score/include/st/st.h
+src/luaapi/luast.d: ../src/luaapi/luast.c /home/blc/c/vine/include/mem.h \
+ /home/blc/c/vine/include/exception/st_exception.h \
+ /home/blc/c/vine/include/exception/exception.h \
+ /home/blc/c/vine/include/logger.h /home/blc/c/vine/include/utils.h \
+ /home/blc/c/vine/include/luaapi/luautils.h \
+ /home/blc/c/vine/deps/lua/src/lua.h \
+ /home/blc/c/vine/deps/lua/src/luaconf.h \
+ /home/blc/c/vine/include/luaapi/luast.h \
+ /home/blc/c/vine/deps/lua/src/lauxlib.h \
+ /home/blc/c/vine/deps/lua/src/lua.h \
+ /home/blc/c/vine/deps/lua/src/lualib.h /home/blc/c/vine/include/st/st.h
 
-/home/blc/c/score/include/mem.h:
+/home/blc/c/vine/include/mem.h:
 
-/home/blc/c/score/include/exception/st_exception.h:
+/home/blc/c/vine/include/exception/st_exception.h:
 
-/home/blc/c/score/include/exception/exception.h:
+/home/blc/c/vine/include/exception/exception.h:
 
-/home/blc/c/score/include/logger.h:
+/home/blc/c/vine/include/logger.h:
 
-/home/blc/c/score/include/utils.h:
+/home/blc/c/vine/include/utils.h:
 
-/home/blc/c/score/include/luaapi/luautils.h:
+/home/blc/c/vine/include/luaapi/luautils.h:
 
-/home/blc/c/score/libs/lua.h:
+/home/blc/c/vine/deps/lua/src/lua.h:
 
-/home/blc/c/score/libs/luaconf.h:
+/home/blc/c/vine/deps/lua/src/luaconf.h:
 
-/home/blc/c/score/include/luaapi/luast.h:
+/home/blc/c/vine/include/luaapi/luast.h:
 
-/home/blc/c/score/libs/lauxlib.h:
+/home/blc/c/vine/deps/lua/src/lauxlib.h:
 
-/home/blc/c/score/libs/lua.h:
+/home/blc/c/vine/deps/lua/src/lua.h:
 
-/home/blc/c/score/libs/lualib.h:
+/home/blc/c/vine/deps/lua/src/lualib.h:
 
-/home/blc/c/score/include/st/st.h:
+/home/blc/c/vine/include/st/st.h:
