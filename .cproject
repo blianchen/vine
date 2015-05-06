@@ -40,7 +40,8 @@
 								<option id="gnu.c.compiler.option.dialect.flags.884832437" name="Other dialect flags" superClass="gnu.c.compiler.option.dialect.flags" value="" valueType="string"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1334370697" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="LINUX"/>
-									<listOptionValue builtIn="false" value=""/>
+									<listOptionValue builtIn="false" value="HAVE_LIBPQ"/>
+									<listOptionValue builtIn="false" value="HAVE_HIREDIS"/>
 									<listOptionValue builtIn="false" value="MD_HAVE_EPOLL"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1150233251" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>

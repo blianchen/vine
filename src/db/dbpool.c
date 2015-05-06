@@ -227,5 +227,5 @@ void dbpool_returnConn(T P, dbconn_t conn) {
 }
 
 const char *dbpool_version(void) {
-	return "db-pool, ver="VERSION;
+	return "db-pool, ver="DBVERSION;
 }

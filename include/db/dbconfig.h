@@ -4,7 +4,7 @@
 #include <assert.h>
 
 /* Version number of package */
-#define VERSION "0.1"
+#define DBVERSION "0.1"
 
 /**
  * Standard String length
@@ -13,13 +13,13 @@
 
 #define uchar_t unsigned char
 
-#define HAVE_HIREDIS 1
+//#define HAVE_HIREDIS 1
 
 /* Define to 1 to enable mysql */
 //#define HAVE_LIBMYSQLCLIENT 1
 
 /* Define to 1 to enable postgresql */
-#define HAVE_LIBPQ 1
+//#define HAVE_LIBPQ 1
 
 /* Define to 1 if you have the <libpq-fe.h> header file. */
 //#define HAVE_LIBPQ_FE_H 1

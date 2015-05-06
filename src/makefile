@@ -36,6 +36,14 @@ TARGETDIR   = ../bin
 DEFINES     = -D$(OS)
 CFLAGS      =
 
+# set support database,  HAVE_HIREDIS/HAVE_LIBPQ
+HAVE_HIREDIS = true
+HAVE_LIBPQ = true
+
+# set dir
+DIRS := . st luaapi db 
+
+
 ##########################
 # Platform section.
 # Possible targets:
@@ -175,6 +183,21 @@ OTHER_FLAGS += -g3
 DEFINES     += -DDEBUG
 endif
 
+#
+# database set
+#
+ifeq ($(HAVE_HIREDIS), true)
+DEFINES     += -DHAVE_HIREDIS
+DIRS		 += db/redis
+LDFLAGS		 += -lhiredis
+endif
+
+ifeq ($(HAVE_LIBPQ), true)
+DEFINES     += -DHAVE_LIBPQ
+DIRS		 += db/postgresql
+LDFLAGS		 += -lpq
+endif
+
 ##########################
 # Other possible defines:
 # To use poll(2) instead of select(2) for events checking:
@@ -226,10 +249,10 @@ INCS := -I"../include" -I"../deps/lua/src"
 CFLAGS += $(DEFINES) $(OTHER_FLAGS) $(EXTRA_CFLAGS)
 CFLAGS += $(INCS)
 
-LIBS := -L"/home/blc/c/vine/deps/lua/src" -lpthread -lm -ldl -lhiredis -lpq -lcheck
+LIBS += -L"../deps/lua/src" -lpthread -lm -ldl -lcheck -llua
 LDFLAGS += $(LIBS) -L$(TARGETDIR)
 
-DIRS = $(shell find . -maxdepth 3 -type d)
+#DIRS = $(shell find . -maxdepth 3 -type d)
 SRCS := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c))
 #SRCS := $(filter-out $(EXCLUDE_FILES), $(SRCS))
 SRCS := $(foreach file,$(SRCS),$(TARGETDIR)/$(file))
@@ -250,7 +273,7 @@ $(MAKEDIRS):
 	if [ ! -d $@ ]; then mkdir $@; fi
 
 vine: $(OBJS)
-	$(CC) $(LDFLAGS) -o $(TARGETDIR)/vine $(OBJS) -llua
+	$(CC) -o $(TARGETDIR)/vine $(OBJS) $(LDFLAGS)
 
 $(TARGETDIR)/st/md.o: st/md.S
 	$(CC) $(CFLAGS) -c $< -o $@
