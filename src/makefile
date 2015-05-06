@@ -267,7 +267,7 @@ none:
 	@echo "where PLATFORM is one of these:"
 	@echo "   $(PLATS)"
 
-all: $(MAKEDIRS) vine
+all: $(MAKEDIRS) re2cparse vine
 
 $(MAKEDIRS):
 	if [ ! -d $@ ]; then mkdir $@; fi
@@ -280,6 +280,11 @@ $(TARGETDIR)/st/md.o: st/md.S
 
 $(TARGETDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+	
+re2cparse: kv_options.re parseuri.re
+	./re2c -o kv_options.rec kv_options.re
+	./re2c -o parseuri.rec parseuri.re
+	./re2c -o todatetime.rec todatetime.re
 
 echo_inner: 
 	@echo ""
@@ -295,7 +300,7 @@ echo_inner:
 	@echo ""
 
 clean:
-	rm -rf $(TARGETDIR)
+	rm -rf $(TARGETDIR) kv_options.rec parseuri.rec todatetime.rec
 
 
 #########################################################
