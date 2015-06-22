@@ -34,6 +34,7 @@
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.479365659" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.47913316" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/deps/libbson/src/bson}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/deps/lua/src}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.dialect.std.1036420528" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
@@ -49,9 +50,11 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.879838247" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
 								<option id="gnu.c.link.option.paths.1801859550" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/vine/deps/lua/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/deps/libbson/.libs}&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.779270407" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="lua"/>
+									<listOptionValue builtIn="false" value="bson"/>
 								</option>
 								<option id="gnu.c.link.option.ldflags.911855129" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-lpthread -lm -ldl -lhiredis -lpq -lcheck" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.920143375" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
@@ -68,8 +71,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lua"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="deps/*.*" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

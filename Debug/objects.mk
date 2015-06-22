@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -llua
+LIBS := -llua -lbson
 
