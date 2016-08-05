@@ -446,6 +446,7 @@ static const luaL_Reg funs[] = {
 };
 
 LUA_API int luaopen_db(lua_State* l) {
-	luaL_register(l, LUA_DB_LIBNAME, funs);
+	luaL_newlib(l, funs);
+//	luaL_register(l, LUA_DB_LIBNAME, funs);
 	return 1;
 }

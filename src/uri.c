@@ -20,11 +20,11 @@
 #define uchar_t unsigned char
 
 const char HEX2DEC[256] = {
-		/*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
+		/*      0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F */
 		/* 0 */-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 		/* 1 */-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 		/* 2 */-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-		/* 3 */0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1,		// 0, 1, 2, 3,  4, 5, 6, 7,  8, 9,
+		/* 3 */ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,		// 0, 1, 2, 3,  4, 5, 6, 7,  8, 9,
 
 		/* 4 */-1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,		// -1, A, B, C,  D, E, F,-1, -1,-1,
 		/* 5 */-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -222,8 +222,8 @@ T uri_create(const char *url, ...) {
 
 void uri_free(T *U) {
 	assert(U && *U);
-        _freeParams((*U)->params);
-        FREE((*U)->paramNames);
+    _freeParams((*U)->params);
+    FREE((*U)->paramNames);
 	FREE((*U)->toString);
 	FREE((*U)->query);
 	FREE((*U)->data);
@@ -276,16 +276,16 @@ const char *uri_getQueryString(T U) {
 
 
 const char **uri_getParameterNames(T U) {
-        assert(U);
-        if (U->params && (U->paramNames == NULL)) {
-                param_t p;
-                int i = 0, len = 0;
-                for (p = U->params; p; p = p->next) len++;
-                U->paramNames = MALLOC((len + 1) * sizeof *(U->paramNames));
-                for (p = U->params; p; p = p->next)
-                        U->paramNames[i++] = p->name;
-                U->paramNames[i] = NULL;
-        }
+	assert(U);
+	if (U->params && (U->paramNames == NULL)) {
+			param_t p;
+			int i = 0, len = 0;
+			for (p = U->params; p; p = p->next) len++;
+			U->paramNames = MALLOC((len + 1) * sizeof *(U->paramNames));
+			for (p = U->params; p; p = p->next)
+					U->paramNames[i++] = p->name;
+			U->paramNames[i] = NULL;
+	}
 	return (const char **)U->paramNames;
 }
 

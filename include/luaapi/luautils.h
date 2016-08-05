@@ -12,6 +12,7 @@
 
 #include <lua.h>
 
+
 /*
 @@ LUA_PROMPT is the default prompt used by stand-alone Lua.
 @@ LUA_PROMPT2 is the default continuation prompt used by stand-alone Lua.
@@ -31,7 +32,7 @@
 
 
 //// lua线程表在全局环境中的索引
-extern char LUA_THREAD_GLOBAL_IDX;
+//extern char LUA_THREAD_GLOBAL_IDX;
 
 struct Smain {
 	lua_State* main_l;
@@ -47,7 +48,7 @@ struct Smain {
 void call_lua_fun(lua_State* l, int nargs, int nresults);
 
 
-void* lua_pmain(void *arg);
+void* pmain(void *arg);
 
 void dump_cstack(lua_State* l);
 

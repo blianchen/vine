@@ -42,7 +42,7 @@ C_DEPS += \
 src/st/%.o: ../src/st/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -DLINUX -DHAVE_LIBPQ -DHAVE_HIREDIS -DMD_HAVE_EPOLL -I"/home/blc/c/vine/include" -I"/home/blc/c/vine/deps/libbson/src/bson" -I"/home/blc/c/vine/deps/lua/src" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -DLINUX -DHAVE_LIBPQ -DHAVE_HIREDIS -DMD_HAVE_EPOLL -I"/home/blc/c/vine/include" -I"/home/blc/c/vine/deps/lua/src" -I"/home/blc/c/vine/deps/libbson/src/bson" -include"/home/blc/c/vine/deps/lua/src/lua.h" -include"/home/blc/c/vine/deps/lua/src/lapi.h" -include"/home/blc/c/vine/deps/lua/src/lauxlib.h" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

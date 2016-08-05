@@ -24,7 +24,7 @@
 #define LUA_ST_LIBNAME "st"
 
 //// lua线程表在全局环境中的索引
-extern char LUA_THREAD_GLOBAL_IDX;
+#define LUA_THREAD_GLOBAL_TABLE "_lua_thread_g_t_"
 
 //void st_context_init();
 

@@ -12,7 +12,7 @@ function proclient(clientSock)
 	local playerid;
 	local n, msg;
 	
-	-- process player login message
+--	process player login message
 --	n, msg = net.read(clientSock);
 --	n, playerid = pack.unpack(msg, ">P");
 	

@@ -14,10 +14,9 @@
 
 #define SOCKET_LISTEN_REQUEST_QUEUE 256
 
-
+// 也可以使用文件fd
 typedef struct socket_s {
 	st_netfd_t nfd;
-//	int osfd;
 	char* ip;
 	char* buf;
 	int buflen;
