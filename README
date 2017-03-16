@@ -1,8 +1,1 @@
-score 是基于 state-threads + lua 的 Actor 模型服务器开发框架
-
-项目起源日期：
-- 2014/11/03
-
-项目参与人：
-- 白连忱<blc>
-- 江波<bob>
+Vine 是基于 state-threads + lua 的服务器开发框架，仿erlang进程模型。由于state-threads，不支持window。练手项目。
