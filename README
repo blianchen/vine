@@ -1,1 +1,1 @@
-Vine 是基于 state-threads + lua 的服务器开发框架，仿erlang进程模型。由于state-threads，不支持window。练手项目。需要先启动vpmd项目。
+Vine 是基于 state-threads + lua 的服务器开发框架，仿erlang进程模型。由于state-threads，不支持window。实验性项目。需要先启动vpmd项目。
